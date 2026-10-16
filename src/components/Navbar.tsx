@@ -64,23 +64,23 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
           <Link to="/" className="flex items-center gap-3 group focus:outline-none">
             <div
               onClick={handleLogoIconClick}
-              className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-cyan-600 to-sky-400 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 cursor-pointer"
+              className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-500 p-0.5 shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-all duration-300 cursor-pointer"
               title="BOX WIFI"
             >
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Wifi className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                <Wifi className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white group-hover:text-red-300 transition-colors">
                   BOX WIFI
                 </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30">
                   POCKET
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-400 tracking-wider hidden sm:block">
+              <p className="text-[11px] font-medium text-slate-300 tracking-wider hidden sm:block">
                 {t.navTagline}
               </p>
             </div>
@@ -94,8 +94,8 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
                 to={link.path}
                 className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   isActive(link.path)
-                    ? 'text-cyan-400 bg-cyan-950/40 border border-cyan-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-900'
+                    ? 'text-red-400 bg-red-950/40 border border-red-500/30'
+                    : 'text-slate-200 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 {link.name}
@@ -112,8 +112,8 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
                 onClick={() => setLang('mg')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   lang === 'mg'
-                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
                 }`}
                 title="Teny Malagasy"
               >
@@ -124,8 +124,8 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
                 onClick={() => setLang('fr')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   lang === 'fr'
-                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
                 }`}
                 title="Français"
               >

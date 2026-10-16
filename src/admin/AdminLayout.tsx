@@ -74,14 +74,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           {/* Brand header */}
           <div className="p-6 border-b border-slate-800 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 to-cyan-500 p-0.5 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-red-600 to-rose-600 p-0.5 flex items-center justify-center">
                 <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                  <Wifi className="w-5 h-5 text-cyan-400" />
+                  <Wifi className="w-5 h-5 text-red-500" />
                 </div>
               </div>
               <div>
                 <span className="font-extrabold text-sm text-white block">BOX WIFI</span>
-                <span className="text-[10px] text-cyan-400 font-semibold tracking-wider uppercase">
+                <span className="text-[10px] text-red-400 font-semibold tracking-wider uppercase">
                   ESPACE ADMIN
                 </span>
               </div>
@@ -93,7 +93,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 type="button"
                 onClick={() => setLang('mg')}
                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                  lang === 'mg' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'
+                  lang === 'mg' ? 'bg-red-600 text-white' : 'text-slate-300'
                 }`}
               >
                 MG
@@ -102,7 +102,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 type="button"
                 onClick={() => setLang('fr')}
                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                  lang === 'fr' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'
+                  lang === 'fr' ? 'bg-red-600 text-white' : 'text-slate-300'
                 }`}
               >
                 FR
@@ -112,7 +112,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
           {/* User badge */}
           <div className="px-6 py-4 bg-slate-950/40 border-b border-slate-800/80 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-cyan-950 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="w-8 h-8 rounded-full bg-red-950 border border-red-500/30 flex items-center justify-center text-red-400">
               <User className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -136,11 +136,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                   onClick={() => setActiveTab(item.id as any)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                     isSelected
-                      ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/70'
+                      ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isSelected ? 'text-slate-950' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
                 </button>
               );

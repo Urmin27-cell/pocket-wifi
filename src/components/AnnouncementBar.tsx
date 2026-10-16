@@ -12,12 +12,12 @@ export const AnnouncementBar: React.FC<AnnouncementBarProps> = ({ settings }) =>
   }
 
   return (
-    <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 text-white text-xs sm:text-sm font-medium py-2 px-4 shadow-sm border-b border-cyan-400/20">
+    <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white text-xs sm:text-sm font-medium py-2 px-4 shadow-sm border-b border-red-400/20">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-center">
-        <Sparkles className="w-4 h-4 text-cyan-200 animate-pulse shrink-0 hidden sm:inline" />
+        <Sparkles className="w-4 h-4 text-red-200 animate-pulse shrink-0 hidden sm:inline" />
         <span>{settings.announcementText}</span>
         <div className="hidden md:inline-flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs font-semibold">
-          <Wifi className="w-3 h-3 text-cyan-200" />
+          <Wifi className="w-3 h-3 text-red-200" />
           <span>4G & 5G Voamarina</span>
         </div>
       </div>

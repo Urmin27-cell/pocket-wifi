@@ -50,13 +50,33 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
       snapshot = await getDocs(colRef);
     }
 
-    const items: Product[] = [];
+    const firestoreItems: Product[] = [];
     snapshot.forEach((d) => {
       const data = d.data() as Product;
-      if (includeInactive || data.isActive) {
-        items.push({ ...data, id: d.id });
+      firestoreItems.push({ ...data, id: d.id });
+    });
+
+    const mergedMap = new Map<string, Product>();
+    localItems.forEach((p) => mergedMap.set(p.id, p));
+    firestoreItems.forEach((p) => {
+      const existing = mergedMap.get(p.id);
+      if (existing) {
+        const tLocal = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+        const tRemote = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+        if (tLocal > tRemote) {
+          mergedMap.set(p.id, existing);
+        } else {
+          mergedMap.set(p.id, p);
+        }
+      } else {
+        mergedMap.set(p.id, p);
       }
     });
+
+    let items = Array.from(mergedMap.values());
+    if (items.length === 0) {
+      items = INITIAL_PRODUCTS;
+    }
 
     items.sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -64,51 +84,19 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
       return dateB - dateA;
     });
 
-    if (items.length > 0) {
-      updateLocalCachedProducts(items);
-      try {
-        localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
-      } catch {
-        // Ignore
-      }
-      return items;
+    updateLocalCachedProducts(items);
+    try {
+      localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
+    } catch {
+      // Ignore
     }
 
-    // If Firestore has no items yet and has never been seeded:
-    const hasBeenSeeded = localStorage.getItem(PRODUCTS_SEEDED_KEY) === 'true';
-    if (!hasBeenSeeded) {
-      console.log('Fampidirana voalohany ny vokatra fototra ho an\'ny BOX WIFI...');
-      const seededList: Product[] = [];
-      for (const prod of INITIAL_PRODUCTS) {
-        try {
-          await setDoc(doc(db, PRODUCTS_COLLECTION, prod.id), prod);
-          seededList.push(prod);
-        } catch (err) {
-          console.warn('Hadisoana teo am-pitahirizana ny vokatra fototra:', err);
-          seededList.push(prod);
-        }
-      }
-      updateLocalCachedProducts(seededList);
-      try {
-        localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
-      } catch {
-        // Ignore
-      }
-      return seededList.filter((p) => includeInactive || p.isActive);
-    }
-
-    // If already seeded before, return local cache if any
-    if (localItems.length > 0) {
-      return localItems.filter((p) => includeInactive || p.isActive);
-    }
-
-    return [];
+    return items.filter((p) => includeInactive || p.isActive);
   } catch (error) {
     console.warn('Fampahatsiahivana: Tsy afaka nalaina tao amin\'ny Firestore ny vokatra, mampiasa cache:', error);
     if (localItems.length > 0) {
       return localItems.filter((p) => includeInactive || p.isActive);
     }
-    // Fallback to initial products if local cache is also empty
     return INITIAL_PRODUCTS.filter((p) => includeInactive || p.isActive);
   }
 }

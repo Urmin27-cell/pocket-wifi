@@ -30,8 +30,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ settings, onExploreCli
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Text Content */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 text-xs font-bold tracking-wide shadow-md">
-              <Zap className="w-4 h-4 text-cyan-400" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/80 border border-red-500/30 text-red-300 text-xs font-bold tracking-wide shadow-md">
+              <Zap className="w-4 h-4 text-red-500" />
               <span>{t.heroBadge}</span>
             </div>
 
@@ -39,7 +39,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ settings, onExploreCli
               {settings.heroTitle || t.heroDefaultTitle}
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+            <p className="text-base sm:text-lg text-slate-200 leading-relaxed max-w-2xl mx-auto lg:mx-0">
               {settings.heroSubtitle || t.heroDefaultSubtitle}
             </p>
 
@@ -48,10 +48,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ settings, onExploreCli
               <button
                 type="button"
                 onClick={onExploreClick}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 hover:from-blue-500 hover:to-sky-300 text-slate-950 font-black text-base shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-500 text-white font-black text-base shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{t.heroCtaExplore}</span>
-                <ArrowRight className="w-5 h-5 text-slate-950" />
+                <ArrowRight className="w-5 h-5 text-white" />
               </button>
 
               {waUrl && (

@@ -16,15 +16,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
   const inStock = product.stockQuantity > 0;
 
   return (
-    <div className="group relative bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col shadow-lg hover:shadow-cyan-950/20 hover:-translate-y-1">
+    <div className="group relative bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-red-500/50 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col shadow-lg hover:shadow-red-950/20 hover:-translate-y-1">
       {/* Badges */}
       <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
         {product.isFeatured && (
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500 text-slate-950 shadow-md">
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-600 text-white shadow-md">
             {t.featuredBadge}
           </span>
         )}
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/80 backdrop-blur-md text-cyan-300 border border-slate-700">
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/80 backdrop-blur-md text-red-300 border border-slate-700">
           {product.category}
         </span>
       </div>
@@ -65,7 +65,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
 
         {/* Hover quick preview button overlay */}
         <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 text-cyan-300 text-xs font-semibold backdrop-blur-md border border-cyan-500/30">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 text-red-300 text-xs font-semibold backdrop-blur-md border border-red-500/30">
             <Eye className="w-3.5 h-3.5" />
             <span>{t.viewDetails}</span>
           </span>
@@ -77,12 +77,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
         <div>
           <h3
             onClick={() => onSelect(product)}
-            className="font-bold text-base text-white group-hover:text-cyan-300 transition-colors cursor-pointer line-clamp-1"
+            className="font-bold text-base text-white group-hover:text-red-300 transition-colors cursor-pointer line-clamp-1"
             title={product.name}
           >
             {product.name}
           </h3>
-          <p className="text-slate-400 text-xs mt-1.5 line-clamp-2 leading-relaxed">
+          <p className="text-slate-300 text-xs mt-1.5 line-clamp-2 leading-relaxed">
             {product.shortDescription || 'Pocket WiFi & routeurs portables haut débit.'}
           </p>
         </div>
@@ -90,8 +90,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
         {/* Price & Action Buttons */}
         <div className="pt-3 border-t border-slate-800/80 space-y-3">
           <div className="flex items-baseline justify-between">
-            <span className="text-xs text-slate-400">{t.priceLabel}</span>
-            <span className="text-lg font-extrabold text-cyan-400 tracking-tight">
+            <span className="text-xs text-slate-300">{t.priceLabel}</span>
+            <span className="text-lg font-extrabold text-red-400 tracking-tight">
               {formatAriary(product.price)}
             </span>
           </div>
@@ -102,7 +102,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
               onClick={() => onSelect(product)}
               className="w-full py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors focus:outline-none cursor-pointer"
             >
-              <Eye className="w-3.5 h-3.5 text-cyan-400" />
+              <Eye className="w-3.5 h-3.5 text-red-400" />
               <span>{t.viewDetails}</span>
             </button>
 
@@ -112,7 +112,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
               disabled={!inStock}
               className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md focus:outline-none cursor-pointer ${
                 inStock
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-950/30 active:scale-[0.98]'
+                  ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-950/30 active:scale-[0.98]'
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed'
               }`}
             >
