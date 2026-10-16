@@ -147,6 +147,7 @@ export async function saveProduct(product: Omit<Product, 'id'>, existingId?: str
     slug: product.slug || createSlug(product.name),
     createdAt: (product as any).createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    isActive: product.isActive ?? true,
   };
 
   // Strict Firestore Document Size Check (Must be under 700 KiB)
