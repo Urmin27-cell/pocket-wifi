@@ -10,11 +10,12 @@ import {
   ShieldAlert,
   ArrowRight,
   Info,
+  AlertTriangle,
 } from 'lucide-react';
 import { Product, CompressedImage } from '../types';
 import { formatAriary, createSlug } from '../utils/formatters';
 import { compressImageFile, formatBytes, estimateDocumentSizeBytes, FIRESTORE_DOC_MAX_SAFE_BYTES } from '../services/imageCompressionService';
-import { saveProduct } from '../services/productService';
+import { saveProduct, deleteProduct } from '../services/productService';
 import { useToast } from '../components/Toast';
 
 interface AdminProductFormProps {
@@ -45,6 +46,8 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionFeedback, setCompressionFeedback] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Auto-generate slug when name changes if new product
@@ -116,10 +119,10 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = 'Tsy maintsy fenoina ny anaran\'ny vokatra.';
-    if (price <= 0) errs.price = 'Tokony ho mihoatra ny 0 Ariary ny vidiny.';
-    if (stockQuantity < 0) errs.stockQuantity = 'Tsy azo atao latsaky ny 0 ny tahiry.';
-    if (images.length === 0) errs.images = 'Ampidiro farafahakeliny sary 1 ho an\'ny vokatra.';
+    if (!name.trim()) errs.name = 'Tsy maintsy fenoina ny anaran\'ny vokatra / Le nom est obligatoire.';
+    if (price <= 0) errs.price = 'Tokony ho mihoatra ny 0 Ariary ny vidiny / Le prix doit être supérieur à 0.';
+    if (stockQuantity < 0) errs.stockQuantity = 'Tsy azo atao latsaky ny 0 ny tahiry / Le stock ne peut pas être négatif.';
+    if (images.length === 0) errs.images = 'Ampidiro farafahakeliny sary 1 ho an\'ny vokatra / Veuillez ajouter au moins une image.';
 
     if (isDocumentTooLarge) {
       errs.size = `Lehibe loatra ny angona (${formatBytes(totalSizeBytes)}). Ny fetra azo antoka ho an'ny Firestore dia ${formatBytes(
@@ -157,7 +160,9 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
       );
 
       showToast(
-        product ? 'Voaova soa aman-tsara ny vokatra!' : 'Voatahiry soa aman-tsara ny vokatra vaovao!',
+        product
+          ? 'Voaova soa aman-tsara ny vokatra! / Produit modifié avec succès !'
+          : 'Voatahiry soa aman-tsara ny vokatra vaovao! / Nouveau produit enregistré !',
         'success'
       );
       onSuccess();
@@ -169,17 +174,39 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (!product?.id) return;
+    setIsDeleting(true);
+    try {
+      await deleteProduct(product.id);
+      showToast('Voafafa soa aman-tsara ilay vokatra / Produit supprimé avec succès.', 'success');
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      showToast('Tsy nahomby ny famafana: ' + err.message, 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
       <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="p-5 sm:px-8 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-white">
-              {product ? 'Hanova ny Vokatra' : 'Manampy Vokatra Vaovao'}
-            </h2>
-            <p className="text-xs text-slate-400">
-              Famenoana ny mombamomba ny Pocket WiFi na Router
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
+                {product ? 'Hanova ny Vokatra' : 'Manampy Vokatra Vaovao'}
+              </h2>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold border border-slate-700">
+                {product ? 'Modifier le produit' : 'Nouveau produit'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {product
+                ? `ID: ${product.id} • Azonao ovaina ny anarana, sary, vidiny ary tahiry`
+                : "Famenoana ny mombamomba ny Pocket WiFi na Router vaovao"}
             </p>
           </div>
           <button
@@ -205,7 +232,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-cyan-400" />
-                  <span>Sarin'ny Vokatra (Base64 & Auto-Compression)</span>
+                  <span>Sarin'ny Vokatra / Images (Base64 & Auto-Compression)</span>
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   Voatsindry ho azy (max 800×800px, &lt; 150 Ko) ary tehirizina mivantana ao amin'ny Firestore tsy misy Storage.
@@ -274,7 +301,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
               >
                 <Upload className="w-6 h-6" />
                 <span className="text-xs font-semibold">
-                  {isCompressing ? 'Eo am-panitsiana...' : 'Mampiditra Sary'}
+                  {isCompressing ? 'Eo am-panitsiana...' : 'Mampiditra Sary / Ajouter image'}
                 </span>
                 <span className="text-[10px] text-slate-500">JPG, PNG, WebP</span>
               </button>
@@ -295,7 +322,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
               <label className="block text-xs font-semibold text-slate-300">
-                Anaran'ny Vokatra <span className="text-rose-400">*</span>
+                Anaran'ny Vokatra / Nom du produit <span className="text-rose-400">*</span>
               </label>
               <input
                 type="text"
@@ -309,7 +336,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-300">
-                Sokajy
+                Sokajy / Catégorie
               </label>
               <select
                 value={category}
@@ -325,7 +352,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-300">
-                Vidiny (amin'ny Ariary) <span className="text-rose-400">*</span>
+                Vidiny / Prix (amin'ny Ariary) <span className="text-rose-400">*</span>
               </label>
               <div className="relative">
                 <input
@@ -345,7 +372,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-300">
-                Isan'ny Tahiry (Stock)
+                Isan'ny Tahiry / Quantité en stock
               </label>
               <input
                 type="number"
@@ -374,7 +401,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
           {/* Short description */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-300">
-              Famaritana fohy (miseho amin'ny karatra)
+              Famaritana fohy (miseho amin'ny karatra) / Description courte
             </label>
             <input
               type="text"
@@ -388,7 +415,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
           {/* Full description */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-300">
-              Famaritana feno sy antsipiriany ara-teknika
+              Famaritana feno sy antsipiriany ara-teknika / Description détaillée
             </label>
             <textarea
               rows={4}
@@ -422,29 +449,82 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
                 className="w-4 h-4 rounded text-cyan-500 bg-slate-900 border-slate-700 focus:ring-0"
               />
               <div>
-                <span className="text-xs font-bold text-white block">Asongadino (Malaza)</span>
+                <span className="text-xs font-bold text-white block">Asongadino (Malaza / Vedette)</span>
                 <span className="text-[11px] text-slate-400">Miseho eo amin'ny pejy fandraisana.</span>
               </div>
             </label>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-colors"
-            >
-              Aoka ihany
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving || isCompressing || isDocumentTooLarge}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 hover:from-blue-500 hover:to-sky-300 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-4 h-4 text-slate-950" />
-              <span>{isSaving ? 'Eo am-pitahirizana...' : product ? 'Mitahiry ny fanovana' : 'Mampiditra ny vokatra'}</span>
-            </button>
+          {/* Delete confirmation section inside form if editing */}
+          {showDeleteConfirm && product && (
+            <div className="p-4 rounded-2xl bg-rose-950/90 border border-rose-500/50 space-y-3 animate-in fade-in">
+              <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Tena te-hamafa ity vokatra "${product.name}" ity ve ianao? / Confirmer la suppression ?</span>
+              </div>
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                >
+                  Aoka ihany / Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteProduct}
+                  disabled={isDeleting}
+                  className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isDeleting ? 'Eo am-pamafana...' : 'Eny, fafao / Supprimer'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-800">
+            {/* Direct Delete button in Form if editing */}
+            {product ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isSaving || isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 text-rose-300 hover:text-rose-100 border border-rose-500/40 font-bold text-xs flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Hamafa ity vokatra ity / Supprimer</span>
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving || isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-colors"
+              >
+                Aoka ihany / Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving || isCompressing || isDocumentTooLarge || isDeleting}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 hover:from-blue-500 hover:to-sky-300 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4 text-slate-950" />
+                <span>
+                  {isSaving
+                    ? 'Eo am-pitahirizana...'
+                    : product
+                    ? 'Mitahiry ny fanovana / Enregistrer'
+                    : 'Mampiditra ny vokatra / Ajouter'}
+                </span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

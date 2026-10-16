@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, CheckCircle2, AlertTriangle, ShieldCheck, Truck, Wifi, Plus, Minus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, MessageSquare, CheckCircle2, AlertTriangle, ShieldCheck, Truck, Wifi, Plus, Minus, Edit2 } from 'lucide-react';
 import { Product } from '../types';
 import { formatAriary } from '../utils/formatters';
 import { useLanguage } from '../i18n/LanguageContext';
+import { isPinSessionValid } from '../services/pinService';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -12,6 +14,8 @@ interface ProductDetailModalProps {
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose, onOrder }) => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const isAdmin = isPinSessionValid();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
@@ -190,6 +194,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   <MessageSquare className="w-5 h-5 fill-white" />
                   <span>{t.sendOrderBtn}</span>
                 </button>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate('/admin');
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-500/30 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Hanova ity vokatra ity ao amin'ny Admin / Modifier dans l'admin</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

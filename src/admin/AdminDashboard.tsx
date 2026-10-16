@@ -11,10 +11,15 @@ import {
   TrendingUp,
   MessageSquare,
   RefreshCw,
+  Edit2,
+  Trash2,
+  AlertTriangle,
+  Wifi,
 } from 'lucide-react';
 import { Product, Order, SiteSettings } from '../types';
 import { formatAriary, formatDateMg } from '../utils/formatters';
 import { seedInitialDatabase } from '../services/seedData';
+import { deleteProduct } from '../services/productService';
 import { useToast } from '../components/Toast';
 
 interface AdminDashboardProps {
@@ -36,6 +41,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const { showToast } = useToast();
   const [seeding, setSeeding] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const totalProducts = products.length;
   const activeProducts = products.filter((p) => p.isActive).length;
@@ -47,9 +54,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const completedOrders = orders.filter((o) => o.status === 'Efa vita').length;
 
   const handleSeed = async () => {
-    if (!window.confirm("Ampidiro ireo vokatra Pocket WiFi sy ny fandrindrana fototra ho an'ny BOX WIFI?")) {
-      return;
-    }
     setSeeding(true);
     try {
       const count = await seedInitialDatabase();
@@ -62,14 +66,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteProduct(productToDelete.id);
+      showToast(`Voafafa soa aman-tsara ny vokatra "${productToDelete.name}".`, 'success');
+      setProductToDelete(null);
+      onRefreshData();
+    } catch (err: any) {
+      showToast('Tsy afaka nofafana: ' + err.message, 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Dashboard Administrateur
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Dashboard Administrateur
+            </h1>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold border border-slate-700">
+              Tableau de bord
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Fitantanana ankapobeny ny {settings.companyName}
           </p>
@@ -79,17 +103,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <button
             onClick={onRefreshData}
             className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition-colors"
-            title="Havaozy ny angona"
+            title="Havaozy ny angona / Rafraîchir"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
 
           <button
             onClick={() => onOpenProductForm()}
-            className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-cyan-500/20 transition-all hover:scale-[1.02]"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-cyan-500/20 transition-all hover:scale-[1.02]"
           >
             <Plus className="w-4 h-4" />
-            <span>Manampy Vokatra Vaovao</span>
+            <span>Manampy Vokatra / Ajouter</span>
           </button>
         </div>
       </div>
@@ -99,13 +123,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-950/80 via-slate-900 to-cyan-950/80 border border-cyan-500/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
           <div className="space-y-2 text-center md:text-left">
             <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              Fanombohana Haingana
+              Fanombohana Haingana / Initialisation
             </span>
             <h3 className="text-lg sm:text-xl font-extrabold text-white">
-              Mbola tsy misy vokatra ao amin'ny database Firestore
+              Ampidiro ireo vokatra Pocket WiFi fototra
             </h3>
             <p className="text-xs text-slate-300 max-w-xl">
-              Azonao ampidirina amin'ny tsindry iray ireo vokatra Pocket WiFi maoderina (Huawei, ZTE, TP-Link, Netgear, kojakoja) miaraka amin'ny sariny Base64 sy ny vidiny amin'ny Ariary.
+              Ampidiro amin'ny tsindry iray ireo vokatra Pocket WiFi maoderina (Huawei, ZTE, TP-Link, Netgear, kojakoja) miaraka amin'ny sariny Base64 sy ny vidiny amin'ny Ariary.
             </p>
           </div>
           <button
@@ -134,7 +158,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <p className="text-2xl sm:text-3xl font-black text-white">{totalProducts}</p>
           <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold">
-            <span>Hijery ny lisitra</span>
+            <span>Fitantanana vokatra</span>
             <ArrowRight className="w-3 h-3" />
           </div>
         </div>
@@ -145,7 +169,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           className="p-5 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/40 cursor-pointer transition-all space-y-3"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Navoaka (Aseho)</span>
+            <span className="text-xs font-semibold text-slate-400">Navoaka (Actif)</span>
             <div className="p-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-500/20">
               <CheckCircle2 className="w-4 h-4" />
             </div>
@@ -200,7 +224,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onClick={() => onNavigate('settings')}
               className="text-xs text-cyan-400 hover:underline font-semibold"
             >
-              Hanova
+              Hanova / Modifier
             </button>
           </div>
 
@@ -226,7 +250,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onClick={() => onNavigate('orders')}
               className="text-xs text-cyan-400 hover:underline font-semibold"
             >
-              Hijery rehetra
+              Hijery rehetra / Voir tout
             </button>
           </div>
 
@@ -254,18 +278,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Recent Products Table */}
+      {/* Recent Products Table with Both Hanova & Hamafa */}
       <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Package className="w-4 h-4 text-cyan-400" />
-            <span>Vokatra Vao Nampidirina</span>
-          </h3>
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Package className="w-4 h-4 text-cyan-400" />
+              <span>Vokatra Vao Nampidirina / Produits Récents</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Azonao ovaina (modifier) na fafana (supprimer) avy hatrany eto
+            </p>
+          </div>
           <button
             onClick={() => onNavigate('products')}
-            className="text-xs text-cyan-400 hover:underline font-semibold"
+            className="text-xs text-cyan-400 hover:underline font-semibold flex items-center gap-1"
           >
-            Fitantanana Vokatra rehetra
+            <span>Hijery ny vokatra rehetra</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
@@ -274,25 +304,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">Sary & Anarana</th>
-                  <th className="py-3 px-4">Sokajy</th>
-                  <th className="py-3 px-4">Vidiny</th>
-                  <th className="py-3 px-4">Tahiry</th>
-                  <th className="py-3 px-4">Sata</th>
-                  <th className="py-3 px-4 text-right">Asa</th>
+                  <th className="py-3 px-4">Sary & Anarana / Produit</th>
+                  <th className="py-3 px-4">Sokajy / Catégorie</th>
+                  <th className="py-3 px-4">Vidiny / Prix</th>
+                  <th className="py-3 px-4">Tahiry / Stock</th>
+                  <th className="py-3 px-4">Sata / Statut</th>
+                  <th className="py-3 px-4 text-right">Asa / Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {products.slice(0, 5).map((p) => (
+                {products.slice(0, 6).map((p) => (
                   <tr key={p.id} className="hover:bg-slate-950/40">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        {p.images?.[0]?.dataUrl && (
+                        {p.images?.[0]?.dataUrl ? (
                           <img
                             src={p.images[0].dataUrl}
                             alt=""
-                            className="w-9 h-9 object-contain rounded-lg bg-slate-950 p-1"
+                            className="w-10 h-10 object-contain rounded-lg bg-slate-950 p-1"
                           />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-slate-950 p-1 flex items-center justify-center">
+                            <Wifi className="w-5 h-5 text-slate-700" />
+                          </div>
                         )}
                         <div>
                           <span className="font-bold text-white block">{p.name}</span>
@@ -302,25 +336,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </td>
                     <td className="py-3 px-4 text-slate-300">{p.category}</td>
                     <td className="py-3 px-4 font-bold text-cyan-400">{formatAriary(p.price)}</td>
-                    <td className="py-3 px-4 text-slate-300">{p.stockQuantity}</td>
+                    <td className="py-3 px-4 text-slate-300">{p.stockQuantity} isa</td>
                     <td className="py-3 px-4">
                       {p.isActive ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                          Navoaka
+                          Navoaka (Actif)
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950 text-amber-400 border border-amber-500/30">
-                          Nafenina
+                          Nafenina (Masqué)
                         </span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => onOpenProductForm(p)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition-colors"
-                      >
-                        Hanova
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Modifier */}
+                        <button
+                          onClick={() => onOpenProductForm(p)}
+                          className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-semibold text-xs flex items-center gap-1 transition-colors"
+                          title="Hanova ity vokatra ity / Modifier"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Hanova / Modifier</span>
+                        </button>
+
+                        {/* Supprimer */}
+                        <button
+                          onClick={() => setProductToDelete(p)}
+                          className="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 font-semibold text-xs flex items-center gap-1 transition-colors"
+                          title="Hamafa ity vokatra ity / Supprimer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Hamafa / Supprimer</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -331,6 +380,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <p className="text-xs text-slate-500 py-4 text-center">Tsy misy vokatra voatahiry.</p>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 rounded-2xl bg-rose-950 border border-rose-500/30">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Fanamafisana famafana</h3>
+                <span className="text-[11px] text-slate-400">Confirmation de suppression</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+              {productToDelete.images?.[0]?.dataUrl && (
+                <img
+                  src={productToDelete.images[0].dataUrl}
+                  alt=""
+                  className="w-12 h-12 object-contain rounded-xl bg-slate-900 p-1"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-white text-sm truncate">{productToDelete.name}</h4>
+                <p className="text-xs text-cyan-400 font-semibold">{formatAriary(productToDelete.price)}</p>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Tena te-hamafa ity vokatra ity ve ianao? Ho voafafa tanteraka ao amin'ny Cloud Firestore sy ny tranonkala izy.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs"
+              >
+                Aoka ihany / Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Eo am-pamafana...' : 'Eny, fafao / Oui, supprimer'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

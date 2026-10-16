@@ -13,12 +13,14 @@ import { handleFirestoreError, OperationType } from '../firebase/errorHandler';
 import { Product, Category } from '../types';
 import { isDocumentWithinSafeLimit, formatBytes } from './imageCompressionService';
 import { createSlug } from '../utils/formatters';
+import { INITIAL_PRODUCTS } from './seedData';
 
 const PRODUCTS_COLLECTION = 'products';
 const CATEGORIES_COLLECTION = 'categories';
 const CACHED_PRODUCTS_KEY = 'boxwifi_cached_products';
+const PRODUCTS_SEEDED_KEY = 'boxwifi_products_seeded';
 
-function getLocalCachedProducts(): Product[] {
+export function getLocalCachedProducts(): Product[] {
   try {
     const raw = localStorage.getItem(CACHED_PRODUCTS_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -27,7 +29,7 @@ function getLocalCachedProducts(): Product[] {
   }
 }
 
-function updateLocalCachedProducts(items: Product[]): void {
+export function updateLocalCachedProducts(items: Product[]): void {
   try {
     localStorage.setItem(CACHED_PRODUCTS_KEY, JSON.stringify(items));
   } catch {
@@ -64,10 +66,38 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
 
     if (items.length > 0) {
       updateLocalCachedProducts(items);
+      try {
+        localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
+      } catch {
+        // Ignore
+      }
       return items;
     }
 
-    // If Firestore has no items yet, fallback to local cached if available
+    // If Firestore has no items yet and has never been seeded:
+    const hasBeenSeeded = localStorage.getItem(PRODUCTS_SEEDED_KEY) === 'true';
+    if (!hasBeenSeeded) {
+      console.log('Fampidirana voalohany ny vokatra fototra ho an\'ny BOX WIFI...');
+      const seededList: Product[] = [];
+      for (const prod of INITIAL_PRODUCTS) {
+        try {
+          await setDoc(doc(db, PRODUCTS_COLLECTION, prod.id), prod);
+          seededList.push(prod);
+        } catch (err) {
+          console.warn('Hadisoana teo am-pitahirizana ny vokatra fototra:', err);
+          seededList.push(prod);
+        }
+      }
+      updateLocalCachedProducts(seededList);
+      try {
+        localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
+      } catch {
+        // Ignore
+      }
+      return seededList.filter((p) => includeInactive || p.isActive);
+    }
+
+    // If already seeded before, return local cache if any
     if (localItems.length > 0) {
       return localItems.filter((p) => includeInactive || p.isActive);
     }
@@ -78,7 +108,8 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
     if (localItems.length > 0) {
       return localItems.filter((p) => includeInactive || p.isActive);
     }
-    return [];
+    // Fallback to initial products if local cache is also empty
+    return INITIAL_PRODUCTS.filter((p) => includeInactive || p.isActive);
   }
 }
 
@@ -100,7 +131,7 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 export async function saveProduct(product: Omit<Product, 'id'>, existingId?: string): Promise<string> {
-  const id = existingId || 'prod_' + Date.now();
+  const id = existingId || ('prod_' + Date.now());
   const path = `${PRODUCTS_COLLECTION}/${id}`;
 
   const payload: Product = {
@@ -130,6 +161,18 @@ export async function saveProduct(product: Omit<Product, 'id'>, existingId?: str
     local.unshift(payload);
   }
   updateLocalCachedProducts(local);
+  try {
+    localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
+  } catch {
+    // Ignore
+  }
+
+  // Dispatch event so any open components refresh immediately
+  try {
+    window.dispatchEvent(new CustomEvent('boxwifi_products_updated', { detail: { action: 'save', product: payload } }));
+  } catch {
+    // Ignore
+  }
 
   try {
     await setDoc(doc(db, PRODUCTS_COLLECTION, id), payload);
@@ -142,9 +185,23 @@ export async function saveProduct(product: Omit<Product, 'id'>, existingId?: str
 }
 
 export async function deleteProduct(id: string): Promise<void> {
+  if (!id) return;
+
   // Update local cache
   const local = getLocalCachedProducts().filter((p) => p.id !== id);
   updateLocalCachedProducts(local);
+  try {
+    localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
+  } catch {
+    // Ignore
+  }
+
+  // Dispatch event
+  try {
+    window.dispatchEvent(new CustomEvent('boxwifi_products_updated', { detail: { action: 'delete', id } }));
+  } catch {
+    // Ignore
+  }
 
   const path = `${PRODUCTS_COLLECTION}/${id}`;
   try {

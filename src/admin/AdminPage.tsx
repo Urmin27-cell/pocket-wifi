@@ -65,6 +65,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ settings, onRefreshGlobalS
     if (isPinAuthenticated) {
       loadData();
     }
+
+    const handleUpdate = () => {
+      loadData();
+    };
+    window.addEventListener('boxwifi_products_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('boxwifi_products_updated', handleUpdate);
+    };
   }, [isPinAuthenticated]);
 
   const handleOpenProductForm = (product?: Product) => {

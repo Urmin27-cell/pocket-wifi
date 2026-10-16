@@ -3,7 +3,7 @@ import { saveProduct } from './productService';
 import { saveSiteSettings } from './siteSettingsService';
 
 // Generates crisp SVG Data URLs for realistic tech pocket WiFi devices
-function generateDeviceSvg(title: string, speed: string, color: string, badge: string): string {
+export function generateDeviceSvg(title: string, speed: string, color: string, badge: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
     <defs>
       <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -57,11 +57,12 @@ function generateDeviceSvg(title: string, speed: string, color: string, badge: s
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
-export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
+export const INITIAL_PRODUCTS: Product[] = [
   {
+    id: 'prod_huawei_e5577',
     name: 'Huawei E5577 4G LTE Pocket WiFi',
     slug: 'huawei-e5577-4g-lte',
-    shortDescription: 'Pocket WiFi 4G haingana 150 Mbps, batterie 3000mAh maharitra hatramin\'ny 12 ora, manaiky ny pucela rehetra (Telma, Orange, Airtel).',
+    shortDescription: 'Pocket WiFi 4G haingana 150 Mbps, batterie 3000mAh maharitra hatramin\'ny 12 ora, manaiky ny puce rehetra (Telma, Orange, Airtel).',
     description: `Ny Huawei E5577 dia fitaovana Pocket WiFi tena azo antoka sady be mpitady indrindra eto Madagasikara:
 - Haingam-pandeha: 4G LTE hatramin'ny 150 Mbps download / 50 Mbps upload.
 - Puce mifanaraka aminy: Débloqué ho an'ny tambajotra rehetra (Telma 4G, Orange 4G, Airtel 4G).
@@ -89,6 +90,7 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
     updatedAt: new Date().toISOString(),
   },
   {
+    id: 'prod_zte_mf920u',
     name: 'ZTE MF920U 4G Mobile Hotspot',
     slug: 'zte-mf920u-4g-mobile-hotspot',
     shortDescription: 'Pocket WiFi kely sy mora entina, signal mahery, batterie 2000mAh, fifandraisana ho an\'ny fitaovana 10.',
@@ -117,6 +119,7 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
     updatedAt: new Date().toISOString(),
   },
   {
+    id: 'prod_netgear_m1',
     name: 'Netgear Nighthawk M1 4G/5G Pro Mobile Router',
     slug: 'netgear-nighthawk-m1-pro',
     shortDescription: 'Router portable faran\'izay mahery, Gigabit LTE hatramin\'ny 1 Gbps, batterie 5040mAh, port Ethernet RJ45.',
@@ -145,6 +148,7 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
     updatedAt: new Date().toISOString(),
   },
   {
+    id: 'prod_tplink_m7350',
     name: 'TP-Link M7350 4G LTE Advanced Pocket WiFi',
     slug: 'tp-link-m7350-lte-advanced',
     shortDescription: 'Dual-Band WiFi 2.4/5GHz, ecran affichage feno, batterie 2000mAh, fifandraisana marin-toerana.',
@@ -172,6 +176,7 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
     updatedAt: new Date().toISOString(),
   },
   {
+    id: 'prod_cpe_4g',
     name: 'Router Portable CPE 4G miaraka amin\'ny Antenne ivelany',
     slug: 'router-cpe-4g-antenne-ivelany',
     shortDescription: 'Router 4G ho an\'ny trano na birao, antenne 2 mahery hisarihana ny signal any amin\'ny faritra lavitra.',
@@ -199,6 +204,7 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
     updatedAt: new Date().toISOString(),
   },
   {
+    id: 'prod_batterie_3000',
     name: 'Batterie Fanampiny 3000mAh ho an\'ny Pocket WiFi',
     slug: 'batterie-fanampiny-3000mah',
     shortDescription: 'Batterie d\'origine mifanaraka amin\'ny Huawei E5577, E5573 sy router maro hafa, faharetana 12 ora.',
@@ -229,7 +235,7 @@ export const INITIAL_PRODUCTS: Omit<Product, 'id'>[] = [
 export async function seedInitialDatabase(): Promise<number> {
   let count = 0;
   for (const item of INITIAL_PRODUCTS) {
-    await saveProduct(item);
+    await saveProduct(item, item.id);
     count++;
   }
   await saveSiteSettings({
@@ -243,5 +249,10 @@ export async function seedInitialDatabase(): Promise<number> {
     announcementText: '⚡ Fandefasana haingana eto Antananarivo sy amin\'ny faritra manerana an\'i Madagasikara!',
     announcementActive: true,
   });
+  try {
+    localStorage.setItem('boxwifi_products_seeded', 'true');
+  } catch {
+    // Ignore storage issues
+  }
   return count;
 }

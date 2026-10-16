@@ -222,11 +222,7 @@ export default function App() {
       if (fetchedProducts && fetchedProducts.length > 0) {
         setProducts(fetchedProducts);
       } else {
-        const fallbackItems: Product[] = INITIAL_PRODUCTS.map((p, idx) => ({
-          ...p,
-          id: 'demo_' + (idx + 1),
-        }));
-        setProducts(fallbackItems);
+        setProducts(INITIAL_PRODUCTS);
       }
     } catch (err) {
       console.warn('Tsy nahomby ny fakana ny angona voalohany:', err);
@@ -238,6 +234,15 @@ export default function App() {
   useEffect(() => {
     testConnection();
     fetchStoreData();
+
+    const handleProductsUpdated = () => {
+      fetchStoreData();
+    };
+
+    window.addEventListener('boxwifi_products_updated', handleProductsUpdated);
+    return () => {
+      window.removeEventListener('boxwifi_products_updated', handleProductsUpdated);
+    };
   }, []);
 
   return (

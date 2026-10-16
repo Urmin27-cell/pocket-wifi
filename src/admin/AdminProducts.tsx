@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Wifi,
   X,
+  Package,
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatAriary, formatDateMg } from '../utils/formatters';
@@ -31,7 +32,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Rehetra');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const categories = useMemo(() => {
@@ -82,12 +83,13 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!productToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteProduct(id);
-      showToast('Voafafa soa aman-tsara ilay vokatra.', 'success');
-      setDeleteConfirmId(null);
+      await deleteProduct(productToDelete.id);
+      showToast(`Voafafa soa aman-tsara ny vokatra "${productToDelete.name}".`, 'success');
+      setProductToDelete(null);
       onRefreshData();
     } catch (err: any) {
       showToast('Tsy afaka nofafana: ' + err.message, 'error');
@@ -101,20 +103,25 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Fitantanana Vokatra
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Fitantanana Vokatra
+            </h1>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold border border-slate-700">
+              Gestion des Produits
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Fampidirana, fanovana, sary Base64 ary famafana vokatra ao amin'ny Firestore
+            Azonao ovaina (modifier), fafana (supprimer), na ampidirina eto ireo Pocket WiFi sy Router
           </p>
         </div>
 
         <button
           onClick={() => onOpenProductForm()}
-          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-cyan-500/20 transition-all hover:scale-[1.02]"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-cyan-500/20 transition-all hover:scale-[1.02]"
         >
           <Plus className="w-4 h-4" />
-          <span>Manampy Vokatra Vaovao</span>
+          <span>Manampy Vokatra Vaovao / Ajouter</span>
         </button>
       </div>
 
@@ -128,7 +135,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Mitady amin'ny anarana na famaritana..."
+            placeholder="Mitady amin'ny anarana na famaritana / Rechercher..."
             className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
           />
         </div>
@@ -140,164 +147,256 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
         >
           {categories.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {c === 'Rehetra' ? 'Sokajy rehetra / Toutes catégories' : c}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Products Table */}
+      {/* Desktop & Tablet Products Table */}
       <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
         {filteredProducts.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[11px] bg-slate-950/40">
-                <tr>
-                  <th className="py-3.5 px-4">Sary & Vokatra</th>
-                  <th className="py-3.5 px-4">Sokajy</th>
-                  <th className="py-3.5 px-4">Vidiny</th>
-                  <th className="py-3.5 px-4">Tahiry</th>
-                  <th className="py-3.5 px-4">Haben'ny Sary</th>
-                  <th className="py-3.5 px-4">Sata</th>
-                  <th className="py-3.5 px-4 text-right">Asa</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {filteredProducts.map((p) => {
-                  const img = p.images?.[0];
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-950/40 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden">
-                            {img?.dataUrl ? (
-                              <img src={img.dataUrl} alt="" className="w-full h-full object-contain" />
-                            ) : (
-                              <Wifi className="w-5 h-5 text-slate-700" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-white text-sm">{p.name}</span>
-                              {p.isFeatured && (
-                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[11px] bg-slate-950/40">
+                  <tr>
+                    <th className="py-3.5 px-4">Sary & Vokatra / Produit</th>
+                    <th className="py-3.5 px-4">Sokajy / Catégorie</th>
+                    <th className="py-3.5 px-4">Vidiny / Prix</th>
+                    <th className="py-3.5 px-4">Tahiry / Stock</th>
+                    <th className="py-3.5 px-4">Sata / Statut</th>
+                    <th className="py-3.5 px-4 text-right">Asa / Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredProducts.map((p) => {
+                    const img = p.images?.[0];
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-950/40 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                              {img?.dataUrl ? (
+                                <img src={img.dataUrl} alt="" className="w-full h-full object-contain" />
+                              ) : (
+                                <Wifi className="w-5 h-5 text-slate-700" />
                               )}
                             </div>
-                            <span className="text-[11px] text-slate-400 line-clamp-1 max-w-xs">
-                              {p.shortDescription}
-                            </span>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-white text-sm">{p.name}</span>
+                                {p.isFeatured && (
+                                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-400 line-clamp-1 max-w-xs">
+                                {p.shortDescription}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-3.5 px-4 text-slate-300 font-medium">{p.category}</td>
+                        <td className="py-3.5 px-4 text-slate-300 font-medium">{p.category}</td>
 
-                      <td className="py-3.5 px-4 font-bold text-cyan-400 text-sm">
-                        {formatAriary(p.price)}
-                      </td>
+                        <td className="py-3.5 px-4 font-bold text-cyan-400 text-sm">
+                          {formatAriary(p.price)}
+                        </td>
 
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`font-semibold ${
-                            p.stockQuantity > 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}
-                        >
-                          {p.stockQuantity} isa
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-[11px] text-slate-400">
-                        {img?.sizeBytes ? formatBytes(img.sizeBytes) : '-'}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        <button
-                          onClick={() => handleToggleActive(p)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${
-                            p.isActive
-                              ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30 hover:bg-emerald-900/50'
-                              : 'bg-amber-950/80 text-amber-400 border-amber-500/30 hover:bg-amber-900/50'
-                          }`}
-                        >
-                          {p.isActive ? 'Navoaka' : 'Nafenina'}
-                        </button>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleToggleFeatured(p)}
-                            className={`p-1.5 rounded-lg border transition-colors ${
-                              p.isFeatured
-                                ? 'bg-amber-950/50 border-amber-500/40 text-amber-400'
-                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`font-semibold ${
+                              p.stockQuantity > 0 ? 'text-emerald-400' : 'text-rose-400'
                             }`}
-                            title="Asongadina ho malaza"
                           >
-                            <Star className="w-3.5 h-3.5" />
-                          </button>
+                            {p.stockQuantity} isa
+                          </span>
+                        </td>
 
+                        <td className="py-3.5 px-4">
                           <button
-                            onClick={() => onOpenProductForm(p)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-                            title="Hanova"
+                            onClick={() => handleToggleActive(p)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${
+                              p.isActive
+                                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30 hover:bg-emerald-900/50'
+                                : 'bg-amber-950/80 text-amber-400 border-amber-500/30 hover:bg-amber-900/50'
+                            }`}
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            {p.isActive ? 'Navoaka (Actif)' : 'Nafenina (Masqué)'}
                           </button>
+                        </td>
 
-                          <button
-                            onClick={() => setDeleteConfirmId(p.id)}
-                            className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/50 text-rose-400 border border-rose-500/30 transition-colors"
-                            title="Hamafa"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Star Toggle */}
+                            <button
+                              onClick={() => handleToggleFeatured(p)}
+                              className={`p-2 rounded-xl border transition-colors ${
+                                p.isFeatured
+                                  ? 'bg-amber-950/50 border-amber-500/40 text-amber-400'
+                                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                              }`}
+                              title={p.isFeatured ? 'Esory amin\'ny malaza' : 'Asongadino ho malaza'}
+                            >
+                              <Star className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Prominent Edit Button */}
+                            <button
+                              onClick={() => onOpenProductForm(p)}
+                              className="px-3 py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/70 text-cyan-300 hover:text-cyan-200 border border-cyan-500/40 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                              title="Modifier ce produit"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Hanova / Modifier</span>
+                            </button>
+
+                            {/* Prominent Delete Button */}
+                            <button
+                              onClick={() => setProductToDelete(p)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/70 text-rose-300 hover:text-rose-200 border border-rose-500/40 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                              title="Supprimer ce produit"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Hamafa / Supprimer</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="md:hidden divide-y divide-slate-800/80">
+              {filteredProducts.map((p) => {
+                const img = p.images?.[0];
+                return (
+                  <div key={p.id} className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-14 h-14 rounded-xl bg-slate-950 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                        {img?.dataUrl ? (
+                          <img src={img.dataUrl} alt="" className="w-full h-full object-contain" />
+                        ) : (
+                          <Wifi className="w-6 h-6 text-slate-700" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-bold text-white text-sm truncate">{p.name}</h4>
+                          {p.isFeatured && (
+                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                          )}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <p className="text-xs text-slate-400 truncate mt-0.5">{p.category}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="font-bold text-cyan-400 text-sm">
+                            {formatAriary(p.price)}
+                          </span>
+                          <span
+                            className={`text-xs font-semibold ${
+                              p.stockQuantity > 0 ? 'text-emerald-400' : 'text-rose-400'
+                            }`}
+                          >
+                            Stock: {p.stockQuantity}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => onOpenProductForm(p)}
+                        className="py-2 px-3 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Hanova / Modifier</span>
+                      </button>
+
+                      <button
+                        onClick={() => setProductToDelete(p)}
+                        className="py-2 px-3 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hamafa / Supprimer</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
-          <div className="p-12 text-center text-slate-400 text-xs space-y-2">
-            <Wifi className="w-10 h-10 text-slate-700 mx-auto" />
-            <p>Tsy misy vokatra mifanaraka amin'ny sivana.</p>
+          <div className="p-12 text-center text-slate-400 text-xs space-y-3">
+            <Package className="w-12 h-12 text-slate-700 mx-auto" />
+            <p className="text-sm font-semibold text-slate-300">
+              Tsy misy vokatra mifanaraka amin'ny sivana / Aucun produit trouvé
+            </p>
+            <p className="text-slate-500">
+              Tsindrio ny bokotra "Manampy Vokatra Vaovao" hanampiana vokatra vaovao.
+            </p>
           </div>
         )}
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
+      {productToDelete && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in">
             <div className="flex items-center gap-3 text-rose-400">
               <div className="p-2.5 rounded-2xl bg-rose-950 border border-rose-500/30">
                 <AlertTriangle className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white">Fanamafisana famafana</h3>
+              <div>
+                <h3 className="text-lg font-bold text-white">Fanamafisana famafana</h3>
+                <span className="text-[11px] text-slate-400">Confirmation de suppression</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+              {productToDelete.images?.[0]?.dataUrl ? (
+                <img
+                  src={productToDelete.images[0].dataUrl}
+                  alt=""
+                  className="w-12 h-12 object-contain rounded-xl bg-slate-900 p-1"
+                />
+              ) : (
+                <Wifi className="w-8 h-8 text-slate-600" />
+              )}
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-white text-sm truncate">{productToDelete.name}</h4>
+                <p className="text-xs text-cyan-400 font-semibold">{formatAriary(productToDelete.price)}</p>
+              </div>
             </div>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Tena te-hamafa ity vokatra ity ve ianao? Ho voafafa tanteraka ao amin'ny Cloud Firestore ny mombamomba azy sy ny sariny Base64.
+              Tena te-hamafa ity vokatra ity ve ianao? Ho voafafa tanteraka ao amin'ny Cloud Firestore sy ny tranonkala izy.
+              <br />
+              <span className="text-slate-400 text-xs italic">
+                (Ce produit sera définitivement supprimé de la base de données et de la boutique.)
+              </span>
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setDeleteConfirmId(null)}
+                onClick={() => setProductToDelete(null)}
+                disabled={isDeleting}
                 className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs"
               >
-                Aoka ihany
+                Aoka ihany / Annuler
               </button>
               <button
                 type="button"
-                onClick={() => handleDelete(deleteConfirmId)}
+                onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
               >
-                {isDeleting ? 'Eo am-pamafana...' : 'Eny, fafao'}
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Eo am-pamafana...' : 'Eny, fafao / Oui, supprimer'}</span>
               </button>
             </div>
           </div>
