@@ -41,15 +41,39 @@ function AppContent({
   setOrderQuantity: (q: number) => void;
 }) {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Listen for keyboard shortcut Ctrl+Shift+A or URL query params (?admin) or hash (#/admin)
   useEffect(() => {
-    // Check URL query param ?admin or hash
+    // Check URL query param (?redirect, ?admin, ?page=admin) or hash (#/admin, #admin)
     const params = new URLSearchParams(window.location.search);
-    if (params.has('admin') || window.location.hash === '#admin' || window.location.hash === '#/admin') {
+    const redirectParam = params.get('redirect');
+    if (redirectParam) {
+      try {
+        const decoded = decodeURIComponent(redirectParam);
+        navigate(decoded, { replace: true });
+      } catch {
+        navigate('/admin', { replace: true });
+      }
+    } else if (
+      params.has('admin') ||
+      params.get('page') === 'admin' ||
+      window.location.hash === '#admin' ||
+      window.location.hash === '#/admin' ||
+      window.location.hash.startsWith('#/admin') ||
+      window.location.hash.startsWith('#admin')
+    ) {
       navigate('/admin', { replace: true });
     }
+
+    const handleHashChange = () => {
+      const currentHash = window.location.hash;
+      if (
+        currentHash === '#admin' ||
+        currentHash === '#/admin' ||
+        currentHash.startsWith('#/admin') ||
+        currentHash.startsWith('#admin')
+      ) {
+        navigate('/admin', { replace: true });
+      }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl + Shift + A or Cmd + Shift + A
@@ -59,8 +83,12 @@ function AppContent({
       }
     };
 
+    window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [navigate]);
 
   const handleOpenDetail = (product: Product) => {

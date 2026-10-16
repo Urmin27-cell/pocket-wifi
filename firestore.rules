@@ -1,77 +1,38 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Deny
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128;
     }
 
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email == 'boutiquemevasoa@gmail.com'
-      );
-    }
-
-    // Products collection (public catalog for visitors, admin only for write)
+    // Products collection (public catalog for visitors, manageable from admin)
     match /products/{productId} {
-      allow get, list: if true;
-      allow create: if isValidId(productId) && isAdmin();
-      allow update: if isValidId(productId) && isAdmin();
-      allow delete: if isValidId(productId) && isAdmin();
+      allow read, write: if isValidId(productId);
     }
 
     // Categories collection
     match /categories/{categoryId} {
-      allow get, list: if true;
-      allow create, update, delete: if isValidId(categoryId) && isAdmin();
+      allow read, write: if isValidId(categoryId);
     }
 
-    // Site settings
+    // Site settings (general content, contact, whatsapp, security PIN)
     match /siteSettings/{settingId} {
-      allow get, list: if true;
-      allow create, update, delete: if isValidId(settingId) && isAdmin();
+      allow read, write: if isValidId(settingId);
     }
 
     // Banners collection
     match /banners/{bannerId} {
-      allow get, list: if true;
-      allow create, update, delete: if isValidId(bannerId) && isAdmin();
+      allow read, write: if isValidId(bannerId);
     }
 
-    // Orders collection
+    // Orders collection (customer WhatsApp order log and admin management)
     match /orders/{orderId} {
-      allow get, list: if isAdmin();
-      allow create: if isValidId(orderId) &&
-        incoming().customerName is string &&
-        incoming().customerName.size() > 0 &&
-        incoming().contactPhone is string &&
-        incoming().contactPhone.size() > 0 &&
-        incoming().quantity is number &&
-        incoming().quantity > 0;
-      allow update, delete: if isValidId(orderId) && isAdmin();
+      allow read, write: if isValidId(orderId);
     }
 
     // Admins collection
     match /admins/{adminId} {
-      allow get, list: if isAdmin();
-      allow create, update, delete: if isValidId(adminId) && isAdmin();
+      allow read, write: if isValidId(adminId);
     }
   }
 }

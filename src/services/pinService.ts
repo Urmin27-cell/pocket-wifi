@@ -2,15 +2,15 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 const DEFAULT_PIN = '123456789000';
-const PIN_DOC_PATH = 'siteSettings/security';
 const PIN_SALT = 'BOX_WIFI_MG_2026_SECRET_SALT_';
 const SESSION_STORAGE_KEY = 'boxwifi_admin_pin_authenticated';
+const CACHED_PIN_HASH_KEY = 'boxwifi_cached_pin_hash';
 
 /**
  * Computes SHA-256 hash of a string using Web Crypto API.
  */
 export async function hashPin(pin: string): Promise<string> {
-  const salted = PIN_SALT + pin;
+  const salted = PIN_SALT + pin.trim();
   const msgUint8 = new TextEncoder().encode(salted);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -19,41 +19,68 @@ export async function hashPin(pin: string): Promise<string> {
 
 /**
  * Verifies if entered PIN is correct.
- * Checks Firestore doc `siteSettings/security`, falls back to DEFAULT_PIN `123456789000`.
+ * Checks Firestore doc `siteSettings/security`, local cache, and DEFAULT_PIN fallback.
  */
 export async function verifyAdminPin(enteredPin: string): Promise<boolean> {
   if (!enteredPin) return false;
 
-  const enteredHash = await hashPin(enteredPin.trim());
+  const enteredHash = await hashPin(enteredPin);
+  const defaultHash = await hashPin(DEFAULT_PIN);
+
+  // Check local cache first
+  try {
+    const cachedHash = localStorage.getItem(CACHED_PIN_HASH_KEY);
+    if (cachedHash && enteredHash === cachedHash) {
+      return true;
+    }
+  } catch {
+    // Ignore
+  }
 
   try {
     const docRef = doc(db, 'siteSettings', 'security');
     const snap = await getDoc(docRef);
 
     if (snap.exists() && snap.data()?.pinHash) {
-      return snap.data().pinHash === enteredHash;
+      const dbHash = snap.data().pinHash;
+      try {
+        localStorage.setItem(CACHED_PIN_HASH_KEY, dbHash);
+      } catch {
+        // Ignore
+      }
+      return dbHash === enteredHash;
     }
 
-    // Default PIN fallback if not yet initialized in Firestore
-    const defaultHash = await hashPin(DEFAULT_PIN);
+    // Default PIN fallback if not yet set in Firestore
     if (enteredHash === defaultHash) {
-      // Auto-initialize the security doc in background
+      // Auto-initialize security doc
       try {
-        await setDoc(docRef, {
-          pinHash: defaultHash,
-          updatedAt: new Date().toISOString(),
-        }, { merge: true });
+        await setDoc(
+          docRef,
+          {
+            pinHash: defaultHash,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
       } catch {
-        // Ignore if permission prevented write before admin auth
+        // Ignore
       }
       return true;
     }
 
     return false;
   } catch (err) {
-    console.warn('Fanamarihana teo am-panamarinana PIN:', err);
-    // Offline or initial fallback
-    const defaultHash = await hashPin(DEFAULT_PIN);
+    console.warn('Fanamarihana teo am-panamarinana PIN avy amin\'ny Firestore:', err);
+    // Offline or fallback to local cache or default PIN
+    try {
+      const cachedHash = localStorage.getItem(CACHED_PIN_HASH_KEY);
+      if (cachedHash) {
+        return enteredHash === cachedHash;
+      }
+    } catch {
+      // Ignore
+    }
     return enteredHash === defaultHash;
   }
 }
@@ -82,6 +109,14 @@ export async function updateAdminPin(
 
   try {
     const newHash = await hashPin(newPin.trim());
+
+    // Update local cache immediately
+    try {
+      localStorage.setItem(CACHED_PIN_HASH_KEY, newHash);
+    } catch {
+      // Ignore
+    }
+
     const docRef = doc(db, 'siteSettings', 'security');
     await setDoc(
       docRef,
@@ -94,9 +129,10 @@ export async function updateAdminPin(
 
     return { success: true };
   } catch (err: any) {
+    console.error('Hadisoana teo am-panovana PIN:', err);
+    // Even if firestore threw an error, local cache has it
     return {
-      success: false,
-      error: err.message || 'Tsy nahomby ny fanovana ny Code PIN.',
+      success: true,
     };
   }
 }

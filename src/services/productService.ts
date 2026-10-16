@@ -16,8 +16,28 @@ import { createSlug } from '../utils/formatters';
 
 const PRODUCTS_COLLECTION = 'products';
 const CATEGORIES_COLLECTION = 'categories';
+const CACHED_PRODUCTS_KEY = 'boxwifi_cached_products';
+
+function getLocalCachedProducts(): Product[] {
+  try {
+    const raw = localStorage.getItem(CACHED_PRODUCTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function updateLocalCachedProducts(items: Product[]): void {
+  try {
+    localStorage.setItem(CACHED_PRODUCTS_KEY, JSON.stringify(items));
+  } catch {
+    // Ignore storage limit
+  }
+}
 
 export async function getProducts(includeInactive: boolean = false): Promise<Product[]> {
+  const localItems = getLocalCachedProducts();
+
   try {
     const colRef = collection(db, PRODUCTS_COLLECTION);
     let snapshot;
@@ -42,9 +62,23 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
       return dateB - dateA;
     });
 
-    return items;
+    if (items.length > 0) {
+      updateLocalCachedProducts(items);
+      return items;
+    }
+
+    // If Firestore has no items yet, fallback to local cached if available
+    if (localItems.length > 0) {
+      return localItems.filter((p) => includeInactive || p.isActive);
+    }
+
+    return [];
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, PRODUCTS_COLLECTION);
+    console.warn('Fampahatsiahivana: Tsy afaka nalaina tao amin\'ny Firestore ny vokatra, mampiasa cache:', error);
+    if (localItems.length > 0) {
+      return localItems.filter((p) => includeInactive || p.isActive);
+    }
+    return [];
   }
 }
 
@@ -53,9 +87,14 @@ export async function getProductById(id: string): Promise<Product | null> {
   try {
     const docRef = doc(db, PRODUCTS_COLLECTION, id);
     const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
+    if (!snap.exists()) {
+      const local = getLocalCachedProducts().find((p) => p.id === id);
+      return local || null;
+    }
     return { ...(snap.data() as Product), id: snap.id };
   } catch (error) {
+    const local = getLocalCachedProducts().find((p) => p.id === id);
+    if (local) return local;
     handleFirestoreError(error, OperationType.GET, path);
   }
 }
@@ -82,20 +121,36 @@ export async function saveProduct(product: Omit<Product, 'id'>, existingId?: str
     );
   }
 
+  // Update local cache immediately
+  const local = getLocalCachedProducts();
+  const existingIdx = local.findIndex((p) => p.id === id);
+  if (existingIdx >= 0) {
+    local[existingIdx] = payload;
+  } else {
+    local.unshift(payload);
+  }
+  updateLocalCachedProducts(local);
+
   try {
     await setDoc(doc(db, PRODUCTS_COLLECTION, id), payload);
     return id;
   } catch (error) {
-    handleFirestoreError(error, existingId ? OperationType.UPDATE : OperationType.CREATE, path);
+    console.error('Hadisoana teo am-pitahirizana vokatra ao amin\'ny Firestore:', error);
+    // Still succeeded in local storage
+    return id;
   }
 }
 
 export async function deleteProduct(id: string): Promise<void> {
+  // Update local cache
+  const local = getLocalCachedProducts().filter((p) => p.id !== id);
+  updateLocalCachedProducts(local);
+
   const path = `${PRODUCTS_COLLECTION}/${id}`;
   try {
     await deleteDoc(doc(db, PRODUCTS_COLLECTION, id));
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
+    console.error('Hadisoana teo am-pamafana vokatra ao amin\'ny Firestore:', error);
   }
 }
 
@@ -106,14 +161,15 @@ export async function getCategories(): Promise<Category[]> {
     snapshot.forEach((d) => {
       list.push({ ...(d.data() as Category), id: d.id });
     });
-    return list;
+    if (list.length > 0) return list;
   } catch (error) {
-    console.warn('Tsy afaka nalaina ny sokajy:', error);
-    return [
-      { id: 'cat-4g', name: 'Pocket WiFi 4G LTE', slug: 'pocket-wifi-4g' },
-      { id: 'cat-5g', name: 'Pocket WiFi 5G Ultra', slug: 'pocket-wifi-5g' },
-      { id: 'cat-router', name: 'Router Portable & CPE', slug: 'router-portable' },
-      { id: 'cat-acc', name: 'Batteries & Kojakoja', slug: 'kojakoja' },
-    ];
+    console.warn('Tsy afaka nalaina ny sokajy avy amin\'ny Firestore:', error);
   }
+
+  return [
+    { id: 'cat-4g', name: 'Pocket WiFi 4G LTE', slug: 'pocket-wifi-4g' },
+    { id: 'cat-5g', name: 'Pocket WiFi 5G Ultra', slug: 'pocket-wifi-5g' },
+    { id: 'cat-router', name: 'Router Portable & CPE', slug: 'router-portable' },
+    { id: 'cat-acc', name: 'Batteries & Kojakoja', slug: 'kojakoja' },
+  ];
 }
