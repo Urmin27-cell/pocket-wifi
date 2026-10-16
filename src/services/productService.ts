@@ -20,10 +20,20 @@ const CATEGORIES_COLLECTION = 'categories';
 const CACHED_PRODUCTS_KEY = 'boxwifi_cached_products';
 const PRODUCTS_SEEDED_KEY = 'boxwifi_products_seeded';
 
+const DEMO_IDS = new Set([
+  'prod_huawei_e5577',
+  'prod_zte_mf920u',
+  'prod_netgear_m1',
+  'prod_tplink_m7350',
+  'prod_cpe_4g',
+  'prod_batterie_3000'
+]);
+
 export function getLocalCachedProducts(): Product[] {
   try {
     const raw = localStorage.getItem(CACHED_PRODUCTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const items = raw ? JSON.parse(raw) : [];
+    return items.filter((p: Product) => !DEMO_IDS.has(p.id));
   } catch {
     return [];
   }
@@ -31,7 +41,8 @@ export function getLocalCachedProducts(): Product[] {
 
 export function updateLocalCachedProducts(items: Product[]): void {
   try {
-    localStorage.setItem(CACHED_PRODUCTS_KEY, JSON.stringify(items));
+    const cleanItems = items.filter((p) => !DEMO_IDS.has(p.id));
+    localStorage.setItem(CACHED_PRODUCTS_KEY, JSON.stringify(cleanItems));
   } catch {
     // Ignore storage limit
   }
@@ -53,12 +64,17 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
     const firestoreItems: Product[] = [];
     snapshot.forEach((d) => {
       const data = d.data() as Product;
-      firestoreItems.push({ ...data, id: d.id });
+      if (!DEMO_IDS.has(d.id)) {
+        firestoreItems.push({ ...data, id: d.id });
+      }
     });
 
     const mergedMap = new Map<string, Product>();
-    localItems.forEach((p) => mergedMap.set(p.id, p));
+    localItems.forEach((p) => {
+      if (!DEMO_IDS.has(p.id)) mergedMap.set(p.id, p);
+    });
     firestoreItems.forEach((p) => {
+      if (DEMO_IDS.has(p.id)) return;
       const existing = mergedMap.get(p.id);
       if (existing) {
         const tLocal = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
@@ -73,10 +89,7 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
       }
     });
 
-    let items = Array.from(mergedMap.values());
-    if (items.length === 0) {
-      items = INITIAL_PRODUCTS;
-    }
+    let items = Array.from(mergedMap.values()).filter((p) => !DEMO_IDS.has(p.id));
 
     items.sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -85,19 +98,14 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
     });
 
     updateLocalCachedProducts(items);
-    try {
-      localStorage.setItem(PRODUCTS_SEEDED_KEY, 'true');
-    } catch {
-      // Ignore
-    }
 
     return items.filter((p) => includeInactive || p.isActive);
   } catch (error) {
     console.warn('Fampahatsiahivana: Tsy afaka nalaina tao amin\'ny Firestore ny vokatra, mampiasa cache:', error);
     if (localItems.length > 0) {
-      return localItems.filter((p) => includeInactive || p.isActive);
+      return localItems.filter((p) => !DEMO_IDS.has(p.id) && (includeInactive || p.isActive));
     }
-    return INITIAL_PRODUCTS.filter((p) => includeInactive || p.isActive);
+    return [];
   }
 }
 
