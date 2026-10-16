@@ -1,0 +1,6 @@
+{
+  "name": "BOX WIFI – POCKET WIFI",
+  "description": "Tranonkala e-commerce matihanina hividianana Pocket WiFi, router portable ary kojakoja miaraka amin'ny commande mivantana amin'ny WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

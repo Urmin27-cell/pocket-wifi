@@ -1,0 +1,132 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Vokatra amidy toy ny Pocket WiFi, Router portable na kojakoja",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 150 },
+        "slug": { "type": "string", "maxLength": 150 },
+        "shortDescription": { "type": "string", "maxLength": 300 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "price": { "type": "number" },
+        "currency": { "type": "string", "enum": ["MGA"] },
+        "images": { "type": "array" },
+        "category": { "type": "string", "maxLength": 80 },
+        "stockQuantity": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "price", "currency", "isActive"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Sokajin'ny vokatra",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 80 },
+        "slug": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 300 }
+      },
+      "required": ["name", "slug"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Fikirakirana sy votoatin'ny tranonkala",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string", "maxLength": 100 },
+        "whatsappNumber": { "type": "string", "maxLength": 30 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 200 },
+        "heroTitle": { "type": "string", "maxLength": 200 },
+        "heroSubtitle": { "type": "string", "maxLength": 500 },
+        "heroImage": { "type": "string" },
+        "announcementText": { "type": "string", "maxLength": 300 },
+        "announcementActive": { "type": "boolean" },
+        "facebookUrl": { "type": "string", "maxLength": 200 },
+        "footerText": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["companyName", "whatsappNumber"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Bannière fampiroboroboana na fampahafantarana",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "subtitle": { "type": "string", "maxLength": 300 },
+        "image": { "type": "string" },
+        "linkUrl": { "type": "string", "maxLength": 250 },
+        "isActive": { "type": "boolean" },
+        "order": { "type": "number" }
+      },
+      "required": ["title", "isActive"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Commande nataon'ny mpanjifa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productName": { "type": "string", "maxLength": 150 },
+        "productId": { "type": "string", "maxLength": 100 },
+        "unitPrice": { "type": "number" },
+        "quantity": { "type": "number" },
+        "totalPrice": { "type": "number" },
+        "customerName": { "type": "string", "maxLength": 100 },
+        "deliveryLocation": { "type": "string", "maxLength": 200 },
+        "contactPhone": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["Tsy mbola nalefa", "Nomanina halefa amin'ny WhatsApp", "Voamarina avy amin'ny orinasa", "Efa vita", "Nofoanana"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["productName", "unitPrice", "quantity", "customerName", "deliveryLocation", "contactPhone", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Mpandrindra nahazo alalana",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Lisitry ny vokatra amidy"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Sokajin'ny vokatra"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Fikirakirana ankapobeny ho an'ny tranonkala"
+    },
+    "/banners/{bannerId}": {
+      "schema": "Banner",
+      "description": "Bannière ho an'ny pejy fandraisana"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Fitahirizana commande mpanjifa"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Lisitry ny administrateur manana alalana"
+    }
+  }
+}
