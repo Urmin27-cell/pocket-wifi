@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Wifi, MessageSquare, Menu, X, Globe } from 'lucide-react';
+import { Wifi, MessageSquare, Menu, X, Sun, Moon } from 'lucide-react';
 import { SiteSettings } from '../types';
 import { normalizeWhatsAppNumber } from '../services/whatsappService';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useTheme } from './ThemeContext';
 
 interface NavbarProps {
   settings: SiteSettings;
@@ -14,12 +15,12 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { lang, setLang, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
-  // Secret triple click on logo to open /admin
   const clickCountRef = useRef(0);
   const clickTimeoutRef = useRef<any>(null);
 
-  const handleLogoIconClick = (e: React.MouseEvent) => {
+  const handleLogoIconClick = () => {
     clickCountRef.current += 1;
     if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
 
@@ -57,7 +58,11 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 transition-all">
+    <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-all ${
+      theme === 'light'
+        ? 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'
+        : 'bg-slate-950/85 border-slate-800/80 text-white'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo & Brand */}
@@ -67,20 +72,20 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
               className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-500 p-0.5 shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-all duration-300 cursor-pointer"
               title="BOX WIFI"
             >
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Wifi className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
+              <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${theme === 'light' ? 'bg-white' : 'bg-slate-950'}`}>
+                <Wifi className="w-6 h-6 text-red-600 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white group-hover:text-red-300 transition-colors">
+                <span className={`font-extrabold text-lg sm:text-xl tracking-tight transition-colors ${theme === 'light' ? 'text-slate-950 group-hover:text-red-600' : 'text-white group-hover:text-red-300'}`}>
                   BOX WIFI
                 </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600/20 text-red-600 border border-red-500/30">
                   POCKET
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-300 tracking-wider hidden sm:block">
+              <p className={`text-[11px] font-medium tracking-wider hidden sm:block ${theme === 'light' ? 'text-slate-600' : 'text-slate-300'}`}>
                 {t.navTagline}
               </p>
             </div>
@@ -94,8 +99,10 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
                 to={link.path}
                 className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   isActive(link.path)
-                    ? 'text-red-400 bg-red-950/40 border border-red-500/30'
-                    : 'text-slate-200 hover:text-white hover:bg-slate-900'
+                    ? 'text-red-600 bg-red-50 border border-red-200 font-bold'
+                    : theme === 'light'
+                      ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+                      : 'text-slate-200 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 {link.name}
@@ -103,17 +110,41 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
             ))}
           </nav>
 
-          {/* Actions: Language Switcher & WhatsApp CTA (NO ADMIN LINK) */}
+          {/* Actions: Theme Switcher, Language Switcher & WhatsApp CTA */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Mode Jour / Mode Nuit Switcher */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm ${
+                theme === 'light'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                  : 'bg-slate-900 text-amber-400 border-slate-800 hover:bg-slate-800'
+              }`}
+              title={theme === 'light' ? 'Hivadika Mode Nuit' : 'Hivadika Mode Jour'}
+            >
+              {theme === 'light' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-600" />
+                  <span>Mode Jour</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-amber-400" />
+                  <span>Mode Nuit</span>
+                </>
+              )}
+            </button>
+
             {/* Language Switcher */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800">
+            <div className={`flex items-center p-1 rounded-xl border ${theme === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
               <button
                 type="button"
                 onClick={() => setLang('mg')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   lang === 'mg'
                     ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white'
+                    : theme === 'light' ? 'text-slate-700 hover:text-slate-900' : 'text-slate-300 hover:text-white'
                 }`}
                 title="Teny Malagasy"
               >
@@ -125,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   lang === 'fr'
                     ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white'
+                    : theme === 'light' ? 'text-slate-700 hover:text-slate-900' : 'text-slate-300 hover:text-white'
                 }`}
                 title="Français"
               >
@@ -139,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
                 href={generalWhatsAppUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-semibold text-sm shadow-lg shadow-emerald-900/30 hover:shadow-emerald-900/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-semibold text-sm shadow-lg shadow-emerald-900/30 transition-all"
               >
                 <MessageSquare className="w-4 h-4 fill-white" />
                 <span>{t.navWhatsApp}</span>
@@ -147,44 +178,20 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
             )}
           </div>
 
-          {/* Mobile menu trigger */}
-          <div className="flex items-center gap-2 md:hidden">
-            {/* Mobile Language Switcher */}
-            <div className="flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800">
-              <button
-                type="button"
-                onClick={() => setLang('mg')}
-                className={`px-2 py-1 rounded-md text-[11px] font-bold ${
-                  lang === 'mg' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'
-                }`}
-              >
-                MG
-              </button>
-              <button
-                type="button"
-                onClick={() => setLang('fr')}
-                className={`px-2 py-1 rounded-md text-[11px] font-bold ${
-                  lang === 'fr' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'
-                }`}
-              >
-                FR
-              </button>
-            </div>
+          {/* Mobile Right Controls */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl border ${theme === 'light' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-900 text-amber-400 border-slate-800'}`}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
 
-            {generalWhatsAppUrl && (
-              <a
-                href={generalWhatsAppUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-md"
-                aria-label="WhatsApp"
-              >
-                <MessageSquare className="w-4 h-4 fill-white" />
-              </a>
-            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white focus:outline-none"
+              className={`p-2.5 rounded-xl border ${theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-300'}`}
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -193,9 +200,9 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
         </div>
       </div>
 
-      {/* Mobile Drawer (NO ADMIN LINK) */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-800 bg-slate-950/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-2 animate-in fade-in slide-in-from-top-2">
+        <div className={`md:hidden border-b px-4 pt-3 pb-6 space-y-3 shadow-xl ${theme === 'light' ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-950 border-slate-800 text-white'}`}>
           {navLinks.map((link) => (
             <Link
               key={link.path}
@@ -203,15 +210,35 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
               onClick={() => setMobileMenuOpen(false)}
               className={`block px-4 py-3 rounded-xl text-base font-semibold ${
                 isActive(link.path)
-                  ? 'text-cyan-400 bg-cyan-950/40 border border-cyan-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+                  ? 'text-red-600 bg-red-50 border border-red-200'
+                  : theme === 'light' ? 'text-slate-700 hover:bg-slate-100' : 'text-slate-300 hover:bg-slate-900'
               }`}
             >
               {link.name}
             </Link>
           ))}
 
-          <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2.5">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-xs font-bold text-slate-500">Teny / Langue:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLang('mg')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold ${lang === 'mg' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300'}`}
+                >
+                  MG
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLang('fr')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold ${lang === 'fr' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300'}`}
+                >
+                  FR
+                </button>
+              </div>
+            </div>
+
             {generalWhatsAppUrl && (
               <a
                 href={generalWhatsAppUrl}

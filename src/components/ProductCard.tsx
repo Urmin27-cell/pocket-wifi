@@ -3,6 +3,7 @@ import { MessageSquare, Eye, Wifi, CheckCircle2, AlertTriangle } from 'lucide-re
 import { Product } from '../types';
 import { formatAriary } from '../utils/formatters';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useTheme } from './ThemeContext';
 
 interface ProductCardProps {
   product: Product;
@@ -12,11 +13,16 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onOrder }) => {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const primaryImage = product.images?.[0]?.dataUrl;
   const inStock = product.stockQuantity > 0;
 
   return (
-    <div className="group relative bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-red-500/50 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col shadow-lg hover:shadow-red-950/20 hover:-translate-y-1">
+    <div className={`group relative rounded-2xl overflow-hidden transition-all duration-300 flex flex-col shadow-lg hover:-translate-y-1 ${
+      theme === 'light'
+        ? 'bg-white border border-slate-200 hover:border-red-500 shadow-slate-200 hover:shadow-xl'
+        : 'bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-red-500/50 shadow-red-950/20'
+    }`}>
       {/* Badges */}
       <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
         {product.isFeatured && (
@@ -24,7 +30,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
             {t.featuredBadge}
           </span>
         )}
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/80 backdrop-blur-md text-red-300 border border-slate-700">
+        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md border ${
+          theme === 'light'
+            ? 'bg-white/90 text-red-600 border-red-200 shadow-sm'
+            : 'bg-slate-950/80 text-red-300 border-slate-700'
+        }`}>
           {product.category}
         </span>
       </div>
@@ -47,7 +57,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
       {/* Image Container with Base64 display */}
       <div
         onClick={() => onSelect(product)}
-        className="relative w-full aspect-square bg-slate-950/50 overflow-hidden cursor-pointer flex items-center justify-center p-4"
+        className={`relative w-full aspect-square overflow-hidden cursor-pointer flex items-center justify-center p-4 ${
+          theme === 'light' ? 'bg-slate-50' : 'bg-slate-950/50'
+        }`}
       >
         {primaryImage ? (
           <img
@@ -57,8 +69,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center text-slate-600 gap-2">
-            <Wifi className="w-12 h-12 text-slate-700" />
+          <div className="flex flex-col items-center justify-center text-slate-500 gap-2">
+            <Wifi className="w-12 h-12 text-slate-400" />
             <span className="text-xs">No image</span>
           </div>
         )}
@@ -77,21 +89,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
         <div>
           <h3
             onClick={() => onSelect(product)}
-            className="font-bold text-base text-white group-hover:text-red-300 transition-colors cursor-pointer line-clamp-1"
+            className={`font-bold text-base transition-colors cursor-pointer line-clamp-1 ${
+              theme === 'light' ? 'text-slate-900 group-hover:text-red-600' : 'text-white group-hover:text-red-300'
+            }`}
             title={product.name}
           >
             {product.name}
           </h3>
-          <p className="text-slate-300 text-xs mt-1.5 line-clamp-2 leading-relaxed">
+          <p className={`text-xs mt-1.5 line-clamp-2 leading-relaxed ${
+            theme === 'light' ? 'text-slate-600' : 'text-slate-300'
+          }`}>
             {product.shortDescription || 'Pocket WiFi & routeurs portables haut débit.'}
           </p>
         </div>
 
         {/* Price & Action Buttons */}
-        <div className="pt-3 border-t border-slate-800/80 space-y-3">
+        <div className={`pt-3 border-t space-y-3 ${theme === 'light' ? 'border-slate-100' : 'border-slate-800/80'}`}>
           <div className="flex items-baseline justify-between">
-            <span className="text-xs text-slate-300">{t.priceLabel}</span>
-            <span className="text-lg font-extrabold text-red-400 tracking-tight">
+            <span className={`text-xs ${theme === 'light' ? 'text-slate-500' : 'text-slate-300'}`}>{t.priceLabel}</span>
+            <span className="text-lg font-extrabold text-red-600 tracking-tight">
               {formatAriary(product.price)}
             </span>
           </div>
@@ -100,23 +116,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect, onO
             <button
               type="button"
               onClick={() => onSelect(product)}
-              className="w-full py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors focus:outline-none cursor-pointer"
+              className={`py-2 px-3 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1.5 border ${
+                theme === 'light'
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+              }`}
             >
-              <Eye className="w-3.5 h-3.5 text-red-400" />
+              <Eye className="w-3.5 h-3.5" />
               <span>{t.viewDetails}</span>
             </button>
 
             <button
               type="button"
               onClick={() => onOrder(product)}
-              disabled={!inStock}
-              className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md focus:outline-none cursor-pointer ${
-                inStock
-                  ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-950/30 active:scale-[0.98]'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-              }`}
+              className="py-2 px-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-red-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-1.5"
             >
-              <MessageSquare className="w-3.5 h-3.5 fill-current" />
+              <MessageSquare className="w-3.5 h-3.5 fill-white" />
               <span>{t.buyWhatsApp}</span>
             </button>
           </div>

@@ -29,6 +29,16 @@ const DEMO_IDS = new Set([
   'prod_batterie_3000'
 ]);
 
+async function purgeDemoProducts() {
+  try {
+    for (const demoId of DEMO_IDS) {
+      await deleteDoc(doc(db, PRODUCTS_COLLECTION, demoId));
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 export function getLocalCachedProducts(): Product[] {
   try {
     const raw = localStorage.getItem(CACHED_PRODUCTS_KEY);
@@ -49,6 +59,7 @@ export function updateLocalCachedProducts(items: Product[]): void {
 }
 
 export async function getProducts(includeInactive: boolean = false): Promise<Product[]> {
+  purgeDemoProducts().catch(() => {});
   const localItems = getLocalCachedProducts();
 
   try {

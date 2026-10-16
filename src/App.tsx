@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
 import { LanguageProvider } from './i18n/LanguageContext';
+import { ThemeProvider, useTheme } from './components/ThemeContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AnnouncementBar } from './components/AnnouncementBar';
@@ -16,7 +17,6 @@ import { Product, SiteSettings } from './types';
 import { getProducts } from './services/productService';
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from './services/siteSettingsService';
 import { testConnection } from './firebase/config';
-import { INITIAL_PRODUCTS } from './services/seedData';
 
 // Inner component with hooks for keyboard shortcut and URL query navigation
 function AppContent({
@@ -41,6 +41,8 @@ function AppContent({
   setOrderQuantity: (q: number) => void;
 }) {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+
   useEffect(() => {
     // Check URL query param (?redirect, ?admin, ?page=admin) or hash (#/admin, #admin)
     const params = new URLSearchParams(window.location.search);
@@ -110,7 +112,11 @@ function AppContent({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
+      theme === 'light'
+        ? 'bg-white text-slate-900 selection:bg-red-500 selection:text-white'
+        : 'bg-slate-950 text-slate-100 selection:bg-red-500 selection:text-slate-950'
+    }`}>
       <Routes>
         {/* Dedicated Admin Routes (both exact and wildcard) */}
         <Route
@@ -219,11 +225,7 @@ export default function App() {
         setSettings(fetchedSettings);
       }
 
-      if (fetchedProducts && fetchedProducts.length > 0) {
-        setProducts(fetchedProducts);
-      } else {
-        setProducts(INITIAL_PRODUCTS);
-      }
+      setProducts(fetchedProducts || []);
     } catch (err) {
       console.warn('Tsy nahomby ny fakana ny angona voalohany:', err);
     } finally {
@@ -248,19 +250,21 @@ export default function App() {
   return (
     <ToastProvider>
       <LanguageProvider>
-        <BrowserRouter>
-          <AppContent
-            products={products}
-            settings={settings}
-            fetchStoreData={fetchStoreData}
-            detailProduct={detailProduct}
-            setDetailProduct={setDetailProduct}
-            orderProduct={orderProduct}
-            setOrderProduct={setOrderProduct}
-            orderQuantity={orderQuantity}
-            setOrderQuantity={setOrderQuantity}
-          />
-        </BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AppContent
+              products={products}
+              settings={settings}
+              fetchStoreData={fetchStoreData}
+              detailProduct={detailProduct}
+              setDetailProduct={setDetailProduct}
+              orderProduct={orderProduct}
+              setOrderProduct={setOrderProduct}
+              orderQuantity={orderQuantity}
+              setOrderQuantity={setOrderQuantity}
+            />
+          </BrowserRouter>
+        </ThemeProvider>
       </LanguageProvider>
     </ToastProvider>
   );
