@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Wifi, Phone, Mail, MapPin, MessageSquare, ShieldCheck, Zap } from 'lucide-react';
+import { Wifi, Phone, Mail, MapPin, MessageSquare, ShieldCheck, Zap, Lock } from 'lucide-react';
 import { SiteSettings } from '../types';
 import { normalizeWhatsAppNumber } from '../services/whatsappService';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -135,7 +135,17 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>{settings.footerText || `© 2026 ${settings.companyName}.`}</p>
+          <div className="flex items-center gap-2.5">
+            <p>{settings.footerText || `© 2026 ${settings.companyName}.`}</p>
+            {/* Discreet admin lock link */}
+            <Link
+              to="/admin"
+              className="opacity-30 hover:opacity-100 transition-opacity p-1 text-slate-500 hover:text-cyan-400 cursor-pointer"
+              title="Espace Admin (Code PIN)"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </Link>
+          </div>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-cyan-500">
               <Zap className="w-3.5 h-3.5" /> {t.footerTagline}

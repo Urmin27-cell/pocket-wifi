@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { Navbar } from './components/Navbar';
@@ -18,6 +18,158 @@ import { getSiteSettings, DEFAULT_SITE_SETTINGS } from './services/siteSettingsS
 import { testConnection } from './firebase/config';
 import { INITIAL_PRODUCTS } from './services/seedData';
 
+// Inner component with hooks for keyboard shortcut and URL query navigation
+function AppContent({
+  products,
+  settings,
+  fetchStoreData,
+  detailProduct,
+  setDetailProduct,
+  orderProduct,
+  setOrderProduct,
+  orderQuantity,
+  setOrderQuantity,
+}: {
+  products: Product[];
+  settings: SiteSettings;
+  fetchStoreData: () => Promise<void>;
+  detailProduct: Product | null;
+  setDetailProduct: (p: Product | null) => void;
+  orderProduct: Product | null;
+  setOrderProduct: (p: Product | null) => void;
+  orderQuantity: number;
+  setOrderQuantity: (q: number) => void;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Listen for keyboard shortcut Ctrl+Shift+A or URL query params (?admin) or hash (#/admin)
+  useEffect(() => {
+    // Check URL query param ?admin or hash
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('admin') || window.location.hash === '#admin' || window.location.hash === '#/admin') {
+      navigate('/admin', { replace: true });
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + Shift + A or Cmd + Shift + A
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        navigate('/admin');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
+  const handleOpenDetail = (product: Product) => {
+    setDetailProduct(product);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailProduct(null);
+  };
+
+  const handleOpenOrder = (product: Product, quantity: number = 1) => {
+    setOrderProduct(product);
+    setOrderQuantity(quantity);
+    setDetailProduct(null);
+  };
+
+  const handleCloseOrder = () => {
+    setOrderProduct(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+      <Routes>
+        {/* Dedicated Admin Routes (both exact and wildcard) */}
+        <Route
+          path="/admin"
+          element={
+            <AdminPage
+              settings={settings}
+              onRefreshGlobalSettings={fetchStoreData}
+            />
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={
+            <AdminPage
+              settings={settings}
+              onRefreshGlobalSettings={fetchStoreData}
+            />
+          }
+        />
+
+        {/* Public Storefront Routes */}
+        <Route
+          path="*"
+          element={
+            <>
+              <AnnouncementBar settings={settings} />
+              <Navbar settings={settings} />
+
+              <main className="flex-1">
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <HomePage
+                        products={products}
+                        settings={settings}
+                        onSelectProduct={handleOpenDetail}
+                        onOrderProduct={(p) => handleOpenOrder(p, 1)}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/vokatra"
+                    element={
+                      <CatalogPage
+                        products={products}
+                        onSelectProduct={handleOpenDetail}
+                        onOrderProduct={(p) => handleOpenOrder(p, 1)}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/momba-anay"
+                    element={<AboutPage settings={settings} />}
+                  />
+                  <Route
+                    path="/fifandraisana"
+                    element={<ContactPage settings={settings} />}
+                  />
+                </Routes>
+              </main>
+
+              <Footer settings={settings} />
+
+              {/* Modals */}
+              <ProductDetailModal
+                product={detailProduct}
+                onClose={handleCloseDetail}
+                onOrder={(p, q) => handleOpenOrder(p, q)}
+              />
+
+              <OrderModal
+                product={orderProduct}
+                initialQuantity={orderQuantity}
+                settings={settings}
+                isOpen={!!orderProduct}
+                onClose={handleCloseOrder}
+              />
+            </>
+          }
+        />
+      </Routes>
+    </div>
+  );
+}
+
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
@@ -32,14 +184,13 @@ export default function App() {
     try {
       const [fetchedSettings, fetchedProducts] = await Promise.all([
         getSiteSettings(),
-        getProducts(false), // only active products for public storefront
+        getProducts(false),
       ]);
 
       if (fetchedSettings) {
         setSettings(fetchedSettings);
       }
 
-      // If database is brand new and has no products yet, display default realistic seed items
       if (fetchedProducts && fetchedProducts.length > 0) {
         setProducts(fetchedProducts);
       } else {
@@ -61,106 +212,22 @@ export default function App() {
     fetchStoreData();
   }, []);
 
-  const handleOpenDetail = (product: Product) => {
-    setDetailProduct(product);
-  };
-
-  const handleCloseDetail = () => {
-    setDetailProduct(null);
-  };
-
-  const handleOpenOrder = (product: Product, quantity: number = 1) => {
-    setOrderProduct(product);
-    setOrderQuantity(quantity);
-    // Close detail modal if open
-    setDetailProduct(null);
-  };
-
-  const handleCloseOrder = () => {
-    setOrderProduct(null);
-  };
-
   return (
     <ToastProvider>
       <LanguageProvider>
         <BrowserRouter>
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
-          <Routes>
-            {/* Admin Dedicated Route (standalone layout) */}
-            <Route
-              path="/admin/*"
-              element={
-                <AdminPage
-                  settings={settings}
-                  onRefreshGlobalSettings={fetchStoreData}
-                />
-              }
-            />
-
-            {/* Public Storefront Routes */}
-            <Route
-              path="*"
-              element={
-                <>
-                  <AnnouncementBar settings={settings} />
-                  <Navbar settings={settings} />
-
-                  <main className="flex-1">
-                    <Routes>
-                      <Route
-                        path="/"
-                        element={
-                          <HomePage
-                            products={products}
-                            settings={settings}
-                            onSelectProduct={handleOpenDetail}
-                            onOrderProduct={(p) => handleOpenOrder(p, 1)}
-                          />
-                        }
-                      />
-                      <Route
-                        path="/vokatra"
-                        element={
-                          <CatalogPage
-                            products={products}
-                            onSelectProduct={handleOpenDetail}
-                            onOrderProduct={(p) => handleOpenOrder(p, 1)}
-                          />
-                        }
-                      />
-                      <Route
-                        path="/momba-anay"
-                        element={<AboutPage settings={settings} />}
-                      />
-                      <Route
-                        path="/fifandraisana"
-                        element={<ContactPage settings={settings} />}
-                      />
-                    </Routes>
-                  </main>
-
-                  <Footer settings={settings} />
-
-                  {/* Modals */}
-                  <ProductDetailModal
-                    product={detailProduct}
-                    onClose={handleCloseDetail}
-                    onOrder={(p, q) => handleOpenOrder(p, q)}
-                  />
-
-                  <OrderModal
-                    product={orderProduct}
-                    initialQuantity={orderQuantity}
-                    settings={settings}
-                    isOpen={!!orderProduct}
-                    onClose={handleCloseOrder}
-                  />
-                </>
-              }
-            />
-          </Routes>
-        </div>
-      </BrowserRouter>
+          <AppContent
+            products={products}
+            settings={settings}
+            fetchStoreData={fetchStoreData}
+            detailProduct={detailProduct}
+            setDetailProduct={setDetailProduct}
+            orderProduct={orderProduct}
+            setOrderProduct={setOrderProduct}
+            orderQuantity={orderQuantity}
+            setOrderQuantity={setOrderQuantity}
+          />
+        </BrowserRouter>
       </LanguageProvider>
     </ToastProvider>
   );

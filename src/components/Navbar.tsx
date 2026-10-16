@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Wifi, MessageSquare, Menu, X, Globe } from 'lucide-react';
 import { SiteSettings } from '../types';
 import { normalizeWhatsAppNumber } from '../services/whatsappService';
@@ -12,7 +12,27 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { lang, setLang, t } = useLanguage();
+
+  // Secret triple click on logo to open /admin
+  const clickCountRef = useRef(0);
+  const clickTimeoutRef = useRef<any>(null);
+
+  const handleLogoIconClick = (e: React.MouseEvent) => {
+    clickCountRef.current += 1;
+    if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+
+    if (clickCountRef.current >= 3) {
+      clickCountRef.current = 0;
+      navigate('/admin');
+      return;
+    }
+
+    clickTimeoutRef.current = setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 1500);
+  };
 
   const cleanedWhatsApp = normalizeWhatsAppNumber(settings.whatsappNumber);
   const generalWhatsAppUrl = cleanedWhatsApp
@@ -42,7 +62,11 @@ export const Navbar: React.FC<NavbarProps> = ({ settings }) => {
         <div className="flex items-center justify-between h-20">
           {/* Logo & Brand */}
           <Link to="/" className="flex items-center gap-3 group focus:outline-none">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-cyan-600 to-sky-400 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300">
+            <div
+              onClick={handleLogoIconClick}
+              className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-cyan-600 to-sky-400 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 cursor-pointer"
+              title="BOX WIFI"
+            >
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
                 <Wifi className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
               </div>
