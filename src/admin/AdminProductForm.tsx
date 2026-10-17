@@ -11,6 +11,8 @@ import {
   ArrowRight,
   Info,
   AlertTriangle,
+  EyeOff,
+  Star,
 } from 'lucide-react';
 import { Product, CompressedImage } from '../types';
 import { formatAriary, createSlug } from '../utils/formatters';
@@ -39,7 +41,7 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
   const [price, setPrice] = useState<number>(product?.price || 150000);
   const [category, setCategory] = useState(product?.category || 'Pocket WiFi 4G LTE');
   const [stockQuantity, setStockQuantity] = useState<number>(product?.stockQuantity ?? 10);
-  const [isActive, setIsActive] = useState<boolean>(product?.isActive ?? true);
+  const [isActive, setIsActive] = useState<boolean>(product ? product.isActive !== false : true);
   const [isFeatured, setIsFeatured] = useState<boolean>(product?.isFeatured ?? false);
   const [images, setImages] = useState<CompressedImage[]>(product?.images || []);
 
@@ -426,33 +428,98 @@ export const AdminProductForm: React.FC<AdminProductFormProps> = ({
             />
           </div>
 
-          {/* Status Switches */}
-          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 rounded text-cyan-500 bg-slate-900 border-slate-700 focus:ring-0"
-              />
-              <div>
-                <span className="text-xs font-bold text-white block">Asehoy amin'ny Tranonkala (Navoaka)</span>
-                <span className="text-[11px] text-slate-400">Raha vonoina dia lasa brouillon tsy hitan'ny mpanjifa.</span>
-              </div>
-            </label>
+          {/* Section: Publication Status (Navoaka vs Brouillon) */}
+          <div className="space-y-3 p-5 rounded-2xl bg-slate-950 border border-slate-800">
+            <div>
+              <label className="block text-xs font-bold text-white uppercase tracking-wider">
+                Satan'ny Vokatra / Statut de Publication <span className="text-rose-400">*</span>
+              </label>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Safidio raha tianao ho hitan'ny mpanjifa avy hatrany na tehirizina ho brouillon aloha.
+              </p>
+            </div>
 
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isFeatured}
-                onChange={(e) => setIsFeatured(e.target.checked)}
-                className="w-4 h-4 rounded text-cyan-500 bg-slate-900 border-slate-700 focus:ring-0"
-              />
-              <div>
-                <span className="text-xs font-bold text-white block">Asongadino (Malaza / Vedette)</span>
-                <span className="text-[11px] text-slate-400">Miseho eo amin'ny pejy fandraisana.</span>
-              </div>
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option 1: Navoaka / Actif (Active & Online) */}
+              <button
+                type="button"
+                onClick={() => setIsActive(true)}
+                className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-950/80 border-emerald-500 text-white ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-950/40'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                }`}
+              >
+                <div
+                  className={`p-2 rounded-xl mt-0.5 shrink-0 transition-colors ${
+                    isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">Navoaka (Actif / En ligne)</span>
+                    {isActive && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                        Voasafidy ✓
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Miseho avy hatrany amin'ny mpanjifa rehetra ao amin'ny pejy fandraisana sy katalaogy "Nos Produits".
+                  </p>
+                </div>
+              </button>
+
+              {/* Option 2: Brouillon / Nafenina (Draft / Hidden) */}
+              <button
+                type="button"
+                onClick={() => setIsActive(false)}
+                className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                  !isActive
+                    ? 'bg-amber-950/80 border-amber-500 text-white ring-2 ring-amber-500/30 shadow-lg shadow-amber-950/40'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                }`}
+              >
+                <div
+                  className={`p-2 rounded-xl mt-0.5 shrink-0 transition-colors ${
+                    !isActive ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  <EyeOff className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">Brouillon (Nafenina)</span>
+                    {!isActive && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                        Voasafidy
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Voatahiry ao amin'ny Admin ihany fa tsy miseho amin'ny mpanjifa mpividy.
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Featured Product Checkbox */}
+            <div className="pt-2 border-t border-slate-800/80">
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-xl hover:bg-slate-900/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer"
+                />
+                <div className="flex items-center gap-2">
+                  <Star className={`w-4 h-4 ${isFeatured ? 'text-amber-400 fill-amber-400' : 'text-slate-500'}`} />
+                  <span className="text-xs font-bold text-white">Asongadino (Vokatra Malaza / Vedette eo amin'ny pejy fandraisana)</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Delete confirmation section inside form if editing */}

@@ -19,7 +19,7 @@ import {
 import { Product, Order, SiteSettings } from '../types';
 import { formatAriary, formatDateMg } from '../utils/formatters';
 import { seedInitialDatabase } from '../services/seedData';
-import { deleteProduct } from '../services/productService';
+import { deleteProduct, publishAllDrafts } from '../services/productService';
 import { useToast } from '../components/Toast';
 
 interface AdminDashboardProps {
@@ -41,17 +41,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const { showToast } = useToast();
   const [seeding, setSeeding] = useState(false);
+  const [isPublishingAll, setIsPublishingAll] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const totalProducts = products.length;
-  const activeProducts = products.filter((p) => p.isActive).length;
-  const hiddenProducts = totalProducts - activeProducts;
+  const activeProducts = products.filter((p) => p.isActive !== false).length;
+  const hiddenProducts = products.filter((p) => p.isActive === false).length;
 
   const totalOrders = orders.length;
   const pendingOrders = orders.filter((o) => o.status === 'Nomanina halefa amin\'ny WhatsApp').length;
   const confirmedOrders = orders.filter((o) => o.status === 'Voamarina avy amin\'ny orinasa').length;
   const completedOrders = orders.filter((o) => o.status === 'Efa vita').length;
+
+  const handlePublishAll = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsPublishingAll(true);
+    try {
+      const count = await publishAllDrafts();
+      showToast(`Vokatra ${count} navoaka ho Actif soa aman-tsara!`, 'success');
+      onRefreshData();
+    } catch (err: any) {
+      showToast('Nisy olana: ' + err.message, 'error');
+    } finally {
+      setIsPublishingAll(false);
+    }
+  };
 
   const handleSeed = async () => {
     setSeeding(true);
@@ -189,8 +204,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <EyeOff className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-amber-400">{hiddenProducts}</p>
-          <p className="text-[11px] text-slate-500">Tsy miseho amin'ny besinimaro</p>
+          <div className="flex items-baseline justify-between">
+            <p className="text-2xl sm:text-3xl font-black text-amber-400">{hiddenProducts}</p>
+            {hiddenProducts > 0 && (
+              <button
+                type="button"
+                onClick={handlePublishAll}
+                disabled={isPublishingAll}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                <span>{isPublishingAll ? 'Eo am-pamoahana...' : 'Avoaka ho Actif'}</span>
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-500">
+            {hiddenProducts > 0 ? `${hiddenProducts} vokatra tsy mbola hitan'ny mpanjifa` : 'Tsy misy vokatra miafina'}
+          </p>
         </div>
 
         {/* Total Orders */}

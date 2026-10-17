@@ -33,7 +33,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
-        if (!p.isActive) return false;
+        if (p.isActive === false) return false;
 
         const matchesSearch =
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

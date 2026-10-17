@@ -27,8 +27,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const featuredProducts = products.filter((p) => p.isFeatured && p.isActive);
-  const recentProducts = products.filter((p) => p.isActive).slice(0, 6);
+  const featuredProducts = products.filter((p) => p.isFeatured && p.isActive !== false);
+  const recentProducts = products.filter((p) => p.isActive !== false).slice(0, 6);
 
   const cleanedWhatsApp = normalizeWhatsAppNumber(settings.whatsappNumber);
   const waUrl = cleanedWhatsApp

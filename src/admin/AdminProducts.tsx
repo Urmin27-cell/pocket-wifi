@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatAriary, formatDateMg } from '../utils/formatters';
-import { deleteProduct, saveProduct } from '../services/productService';
+import { deleteProduct, saveProduct, publishAllDrafts } from '../services/productService';
 import { formatBytes } from '../services/imageCompressionService';
 import { useToast } from '../components/Toast';
 
@@ -32,8 +32,14 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Rehetra');
+  const [statusFilter, setStatusFilter] = useState<'Rehetra' | 'Navoaka' | 'Brouillon'>('Rehetra');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPublishingAll, setIsPublishingAll] = useState(false);
+
+  const draftCount = useMemo(() => {
+    return products.filter((p) => p.isActive === false).length;
+  }, [products]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -49,22 +55,41 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchCat = categoryFilter === 'Rehetra' || p.category === categoryFilter;
-      return matchSearch && matchCat;
+      const isAct = p.isActive !== false;
+      const matchStatus =
+        statusFilter === 'Rehetra' ||
+        (statusFilter === 'Navoaka' && isAct) ||
+        (statusFilter === 'Brouillon' && !isAct);
+      return matchSearch && matchCat && matchStatus;
     });
-  }, [products, searchTerm, categoryFilter]);
+  }, [products, searchTerm, categoryFilter, statusFilter]);
 
   const handleToggleActive = async (product: Product) => {
+    const nextActive = product.isActive === false; // If currently false, switch to true. If true/undefined, switch to false.
     try {
-      await saveProduct({ ...product, isActive: !product.isActive }, product.id);
+      await saveProduct({ ...product, isActive: nextActive }, product.id);
       showToast(
-        product.isActive
-          ? `Nafenina ny vokatra "${product.name}".`
-          : `Navoaka ho an'ny besinimaro ny vokatra "${product.name}".`,
-        'info'
+        nextActive
+          ? `Navoaka ho an'ny besinimaro (Actif) ny vokatra "${product.name}".`
+          : `Nafenina ho brouillon ny vokatra "${product.name}".`,
+        'success'
       );
       onRefreshData();
     } catch (err: any) {
       showToast('Tsy nahomby: ' + err.message, 'error');
+    }
+  };
+
+  const handlePublishAllDrafts = async () => {
+    setIsPublishingAll(true);
+    try {
+      const count = await publishAllDrafts();
+      showToast(`Vokatra ${count} navoaka ho Actif soa aman-tsara! Hitan'ny mpanjifa avy hatrany izy ireo.`, 'success');
+      onRefreshData();
+    } catch (err: any) {
+      showToast('Nisy olana: ' + err.message, 'error');
+    } finally {
+      setIsPublishingAll(false);
     }
   };
 
@@ -125,6 +150,37 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
         </button>
       </div>
 
+      {/* Drafts Alert Banner if any drafts exist */}
+      {draftCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl animate-in fade-in">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+              <EyeOff className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {draftCount} ao amin'ny Brouillon
+                </span>
+                <h3 className="text-sm font-bold text-white">Misy vokatra mbola tsy navoaka ho an'ny mpanjifa</h3>
+              </div>
+              <p className="text-xs text-slate-300 mt-1">
+                Ireo vokatra ao amin'ny Brouillon dia tsy mbola hitan'ny mpanjifa. Tsindrio ny bokotra eto mba hamoahana azy rehetra ho <strong>Actif</strong> amin'ny tsindry iray.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handlePublishAllDrafts}
+            disabled={isPublishingAll}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center gap-2 shrink-0 shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{isPublishingAll ? 'Eo am-pamoahana...' : `Avoaka ho Actif daholo (${draftCount})`}</span>
+          </button>
+        </div>
+      )}
+
       {/* Filters bar */}
       <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full">
@@ -140,16 +196,28 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
           />
         </div>
 
+        {/* Filter by Category */}
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="w-full sm:w-56 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+          className="w-full sm:w-52 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 cursor-pointer"
         >
           {categories.map((c) => (
             <option key={c} value={c}>
               {c === 'Rehetra' ? 'Sokajy rehetra / Toutes catégories' : c}
             </option>
           ))}
+        </select>
+
+        {/* Filter by Status (Navoaka vs Brouillon) */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as any)}
+          className="w-full sm:w-52 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 cursor-pointer"
+        >
+          <option value="Rehetra">Sata rehetra / Tous les statuts</option>
+          <option value="Navoaka">Navoaka ihany (Actifs)</option>
+          <option value="Brouillon">Brouillon ihany (Nafenina)</option>
         </select>
       </div>
 
@@ -217,13 +285,24 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                         <td className="py-3.5 px-4">
                           <button
                             onClick={() => handleToggleActive(p)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${
-                              p.isActive
-                                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30 hover:bg-emerald-900/50'
-                                : 'bg-amber-950/80 text-amber-400 border-amber-500/30 hover:bg-amber-900/50'
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                              p.isActive !== false
+                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60'
+                                : 'bg-amber-950/80 text-amber-300 border-amber-500/40 hover:bg-amber-900/60'
                             }`}
+                            title={p.isActive !== false ? "Tsindrio raha havadika ho Brouillon" : "Tsindrio raha havoaka ho Actif"}
                           >
-                            {p.isActive ? 'Navoaka (Actif)' : 'Nafenina (Masqué)'}
+                            {p.isActive !== false ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Navoaka (Actif)</span>
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Brouillon (Nafenina)</span>
+                              </>
+                            )}
                           </button>
                         </td>
 
@@ -232,20 +311,20 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                             {/* Star Toggle */}
                             <button
                               onClick={() => handleToggleFeatured(p)}
-                              className={`p-2 rounded-xl border transition-colors ${
+                              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                                 p.isFeatured
                                   ? 'bg-amber-950/50 border-amber-500/40 text-amber-400'
                                   : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
                               }`}
                               title={p.isFeatured ? 'Esory amin\'ny malaza' : 'Asongadino ho malaza'}
                             >
-                              <Star className="w-3.5 h-3.5" />
+                              <Star className={`w-3.5 h-3.5 ${p.isFeatured ? 'fill-amber-400' : ''}`} />
                             </button>
 
                             {/* Prominent Edit Button */}
                             <button
                               onClick={() => onOpenProductForm(p)}
-                              className="px-3 py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/70 text-cyan-300 hover:text-cyan-200 border border-cyan-500/40 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                              className="px-3 py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/70 text-cyan-300 hover:text-cyan-200 border border-cyan-500/40 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                               title="Modifier ce produit"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -255,7 +334,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                             {/* Prominent Delete Button */}
                             <button
                               onClick={() => setProductToDelete(p)}
-                              className="px-3 py-1.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/70 text-rose-300 hover:text-rose-200 border border-rose-500/40 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                              className="px-3 py-1.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/70 text-rose-300 hover:text-rose-200 border border-rose-500/40 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                               title="Supprimer ce produit"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -307,10 +386,52 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                       </div>
                     </div>
 
+                    {/* Status & Featured row on mobile */}
+                    <div className="flex items-center justify-between pt-1 pb-1 border-t border-b border-slate-800/60">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">Sata:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(p)}
+                          className={`px-3 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                            p.isActive !== false
+                              ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 hover:bg-emerald-900/60'
+                              : 'bg-amber-950/90 text-amber-300 border-amber-500/50 hover:bg-amber-900/60'
+                          }`}
+                        >
+                          {p.isActive !== false ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Navoaka (Actif)</span>
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Brouillon (Nafenina)</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFeatured(p)}
+                        className={`px-2 py-1 rounded-lg border flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer ${
+                          p.isFeatured
+                            ? 'bg-amber-950/50 border-amber-500/40 text-amber-400'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                        title={p.isFeatured ? 'Esory amin\'ny malaza' : 'Asongadino ho malaza'}
+                      >
+                        <Star className={`w-3.5 h-3.5 ${p.isFeatured ? 'fill-amber-400' : ''}`} />
+                        <span>{p.isFeatured ? 'Malaza' : 'Tsotra'}</span>
+                      </button>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <button
                         onClick={() => onOpenProductForm(p)}
-                        className="py-2 px-3 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                        className="py-2 px-3 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                         <span>Hanova / Modifier</span>
@@ -318,7 +439,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
                       <button
                         onClick={() => setProductToDelete(p)}
-                        className="py-2 px-3 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                        className="py-2 px-3 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Hamafa / Supprimer</span>

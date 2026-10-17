@@ -110,14 +110,25 @@ export async function getProducts(includeInactive: boolean = false): Promise<Pro
 
     updateLocalCachedProducts(items);
 
-    return items.filter((p) => includeInactive || p.isActive);
+    return items.filter((p) => includeInactive || p.isActive !== false);
   } catch (error) {
     console.warn('Fampahatsiahivana: Tsy afaka nalaina tao amin\'ny Firestore ny vokatra, mampiasa cache:', error);
     if (localItems.length > 0) {
-      return localItems.filter((p) => !DEMO_IDS.has(p.id) && (includeInactive || p.isActive));
+      return localItems.filter((p) => !DEMO_IDS.has(p.id) && (includeInactive || p.isActive !== false));
     }
     return [];
   }
+}
+
+export async function publishAllDrafts(): Promise<number> {
+  const allProducts = await getProducts(true);
+  const drafts = allProducts.filter((p) => p.isActive === false);
+  let count = 0;
+  for (const prod of drafts) {
+    await saveProduct({ ...prod, isActive: true }, prod.id);
+    count++;
+  }
+  return count;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
@@ -147,7 +158,7 @@ export async function saveProduct(product: Omit<Product, 'id'>, existingId?: str
     slug: product.slug || createSlug(product.name),
     createdAt: (product as any).createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    isActive: product.isActive ?? true,
+    isActive: product.isActive !== false,
   };
 
   // Strict Firestore Document Size Check (Must be under 700 KiB)
